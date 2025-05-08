@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PaySlip Generator System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="img/logo.png" alt="Company Logo" class="login-logo">
+                <h1 class="login-title">PaySlip Generator</h1>
+            </div>
+            
+            <div id="login-alert-container"></div>
+            
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+            
+            <div class="login-footer">
+                <p>&copy; 2025 TechPay Solutions. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize authentication service
+            const authService = new AuthService();
+            
+            // Check if already authenticated
+            if (authService.isUserAuthenticated()) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Get form and alert container
+            const loginForm = document.getElementById('login-form');
+            const alertContainer = document.getElementById('login-alert-container');
+            
+            // Form submit event
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Get form data
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Validate form
+                const validation = authService.validateLoginForm({ email, password });
+                
+                if (!validation.isValid) {
+                    // Show validation errors
+                    let errorMessage = 'Please fix the following errors:';
+                    for (const field in validation.errors) {
+                        errorMessage += `<br>- ${validation.errors[field]}`;
+                    }
+                    
+                    showAlert(errorMessage, 'danger', alertContainer);
+                    return;
+                }
+                
+                try {
+                    // Show loading
+                    const submitBtn = loginForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                    
+                    // Attempt to login
+                    await authService.login(email, password);
+                    
+                    // Redirect to dashboard
+                    window.location.href = 'index.html';
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    
+                    // Show error message
+                    showAlert(`Login failed: ${error.message}`, 'danger', alertContainer);
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
