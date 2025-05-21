@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Pay Slip Generator</title>
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="../assets/img/favicon.ico" type="image/x-icon">
+    <script src="../config.js"></script>
+    <!-- <script src="../assets/js/utils/token.js"></script> -->
+    <!-- <script src="../assets/js/utils/validator.js"></script> -->
+    <!-- <script src="../assets/js/utils/notifications.js"></script> -->
+    <!-- <script src="../assets/js/api/api.js"></script> -->
+    <!-- <script src="../assets/js/api/auth.js"></script> -->
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="../assets/img/logo.png" alt="Company Logo" class="login-logo">
+                <h1 class="login-title">Pay Slip Generator</h1>
+            </div>
+            <div class="login-body">
+                <form id="loginForm" class="needs-validation">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" class="form-input" required autofocus>
+                        <div class="form-error" id="username-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-input-container" style="position: relative;">
+                            <input type="password" id="password" class="form-input" required>
+                            <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-error" id="password-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check" style="display: flex; align-items: center;">
+                            <input type="checkbox" id="rememberMe" class="form-check-input" style="margin-right: 8px;">
+                            <label for="rememberMe" class="form-check-label">Remember me</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block" id="loginButton">
+                            <i class="fas fa-sign-in-alt btn-icon"></i> Log In
+                        </button>
+                    </div>
+                    <div class="alert alert-danger" id="login-alert" style="display: none;">
+                        <i class="fas fa-exclamation-circle alert-icon"></i>
+                        <div id="alert-message"></div>
+                    </div>
+                </form>
+            </div>
+            <div style="text-align: center; padding: 1rem; background-color: var(--primary-very-light); color: var(--text-muted); font-size: 0.875rem;">
+                <p>Default admin credentials: admin / Admin@123</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="notifications" class="notifications"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if already logged in
+            if (isAuthenticated()) {
+                window.location.href = '../pages/dashboard.html';
+                return;
+            }
+            
+            const loginForm = document.getElementById('loginForm');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            const loginButton = document.getElementById('loginButton');
+            const loginAlert = document.getElementById('login-alert');
+            const alertMessage = document.getElementById('alert-message');
+            
+            // Toggle password visibility
+            togglePasswordBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePasswordBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+            
+            // Handle form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Reset errors
+                document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+                loginAlert.style.display = 'none';
+                
+                // Validate form
+                const validator = new FormValidator();
+                validator.validate(usernameInput, 'username', 'required|minLength:3');
+                validator.validate(passwordInput, 'password', 'required|minLength:6');
+                
+                if (validator.hasErrors()) {
+                    return;
+                }
+                
+                // Disable login button and show loading
+                loginButton.disabled = true;
+                loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                
+                try {
+                    // Attempt login
+                    const response = await login(usernameInput.value, passwordInput.value);
+                    
+                    // Store "remember me" preference
+                    const rememberMe = document.getElementById('rememberMe').checked;
+                    
+                    // Save token
+                    saveToken(response.token, rememberMe);
+                    
+                    // Show success notification
+                    showNotification('success', 'Login Successful', 'Welcome back!');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '../pages/dashboard.html';
+                    }, 500);
+                } catch (error) {
+                    // Show error
+                    loginAlert.style.display = 'flex';
+                    alertMessage.textContent = error.message || 'Invalid username or password';
+                    
+                    // Reset login button
+                    loginButton.disabled = false;
+                    loginButton.innerHTML = '<i class="fas fa-sign-in-alt btn-icon"></i> Log In';
+                }
+            });
+        });
+    </script>
+    <!-- <script src="../assets/js/pages/login.js"></script> -->
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking Details Form - Pay Slip Generator</title>
+    <link rel="stylesheet" href="../../assets/css/variables.css">
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="../../assets/img/favicon.ico" type="image/x-icon">
+    <script src="../../config.js"></script>
+    <style>
+        /* Form layout improvements */
+        .form-section {
+            background-color: var(--bg-light);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-section h3 {
+            color: var(--text-dark);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+        
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+            outline: none;
+        }
+        
+        .form-text {
+            margin-top: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .form-error {
+            margin-top: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--danger-color);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="header-menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="header-logo">
+            <img src="../../assets/img/logo.png" alt="Company Logo">
+            <h1>Pay Slip Generator</h1>
+        </div>
+        <div class="header-actions">
+            <div class="user-info" id="user-info">
+                <span class="user-name" id="user-name">Loading...</span>
+                <div class="user-dropdown">
+                    <button class="btn btn-sm btn-outline" id="profile-btn">
+                        <i class="fas fa-user btn-icon"></i> Profile
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="logout-btn">
+                        <i class="fas fa-sign-out-alt btn-icon"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Container -->
+    <div class="page-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="../dashboard.html" class="sidebar-menu-link">
+                        <i class="fas fa-tachometer-alt sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../users/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-users sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Users</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../employees/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-id-card sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employees</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../accounts/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-user-tag sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employee Accounts</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../banking/index.html" class="sidebar-menu-link active">
+                        <i class="fas fa-university sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Banking Details</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-file-invoice-dollar sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Payslips</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/form.html" class="sidebar-menu-link">
+                        <i class="fas fa-plus-circle sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Generate Payslip</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h1 class="page-title" id="form-title">Add New Banking Details</h1>
+                    <a href="index.html" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left btn-icon"></i> Back to Banking Details
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <form id="bankingForm" class="needs-validation">
+                            <div class="form-section">
+                                <h3>Banking Information</h3>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="employee_id" class="form-label">Employee ID</label>
+                                        <select id="employee_id" class="form-select" required>
+                                            <option value="">Select Employee</option>
+                                        </select>
+                                        <div class="form-error" id="employee_id-error"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="bank_name" class="form-label">Bank Name</label>
+                                        <input type="text" id="bank_name" class="form-input" required data-validate="required|minLength:2">
+                                        <div class="form-error" id="bank_name-error"></div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="account_number" class="form-label">Account Number</label>
+                                        <input type="text" id="account_number" class="form-input" required data-validate="required|numeric">
+                                        <div class="form-error" id="account_number-error"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="account_type" class="form-label">Account Type</label>
+                                        <select id="account_type" class="form-select" required>
+                                            <option value="">Select Account Type</option>
+                                            <option value="savings">Savings</option>
+                                            <option value="checking">Checking</option>
+                                        </select>
+                                        <div class="form-error" id="account_type-error"></div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="branch_code" class="form-label">Branch Code</label>
+                                        <input type="text" id="branch_code" class="form-input" required data-validate="required|numeric">
+                                        <div class="form-error" id="branch_code-error"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions" style="margin-top: 1rem;">
+                                <button type="submit" class="btn btn-primary" id="submit-btn">
+                                    <i class="fas fa-save btn-icon"></i> <span id="submit-text">Add Banking Details</span>
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="reset-btn">
+                                    <i class="fas fa-undo btn-icon"></i> Reset Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Success Modal -->
+    <div class="modal-backdrop" id="success-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Banking Details Saved Successfully</h2>
+                <button type="button" class="modal-close" id="close-success-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle alert-icon"></i>
+                    <div id="success-message">Banking details have been added successfully!</div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <h4>What would you like to do next?</h4>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="return-list-btn">
+                    <i class="fas fa-list btn-icon"></i> Return to List
+                </button>
+                <button type="button" class="btn btn-success" id="create-new-btn">
+                    <i class="fas fa-plus-circle btn-icon"></i> Create Another
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

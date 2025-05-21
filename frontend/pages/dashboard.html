@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Pay Slip Generator</title>
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="../assets/img/favicon.ico" type="image/x-icon">
+    <script src="../config.js"></script>
+    <!-- <script src="../assets/js/utils/token.js"></script> -->
+    <!-- <script src="../assets/js/utils/notifications.js"></script> -->
+    <!-- <script src="../assets/js/api/api.js"></script> -->
+    <!-- <script src="../assets/js/api/auth.js"></script> -->
+    <!-- <script src="../assets/js/api/payslips.js"></script> -->
+    <!-- <script src="../assets/js/api/employees.js"></script> -->
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="header-menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="header-logo">
+            <img src="../assets/img/logo.png" alt="Company Logo">
+            <h1>Pay Slip Generator</h1>
+        </div>
+        <div class="header-actions">
+            <div class="user-info" id="user-info">
+                <span class="user-name" id="user-name">Loading...</span>
+                <div class="user-dropdown">
+                    <button class="btn btn-sm btn-outline" id="profile-btn">
+                        <i class="fas fa-user btn-icon"></i> Profile
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="logout-btn">
+                        <i class="fas fa-sign-out-alt btn-icon"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Container -->
+    <div class="page-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="dashboard.html" class="sidebar-menu-link active">
+                        <i class="fas fa-tachometer-alt sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="users/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-users sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Users</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="employees/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-id-card sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employees</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="accounts/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-user-tag sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employee Accounts</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="banking/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-university sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Banking Details</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="payslips/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-file-invoice-dollar sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Payslips</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="payslips/form.html" class="sidebar-menu-link">
+                        <i class="fas fa-plus-circle sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Generate Payslip</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <h1 class="page-title">Dashboard</h1>
+                
+                <!-- Overview Stats -->
+                <div class="dashboard-stats">
+                    <div class="stat-card" id="employees-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Total Employees</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card" id="payslips-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Payslips Generated</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card" id="pending-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Pending Payments</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card" id="paid-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Paid Payments</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Payslips -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Payslips</h2>
+                        <a href="payslips/index.html" class="btn btn-sm btn-primary">
+                            <i class="fas fa-list btn-icon"></i> View All
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Payslip #</th>
+                                        <th>Employee</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-payslips">
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="loading-container">
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading recent payslips...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Actions</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <a href="payslips/form.html" class="btn btn-primary">
+                                <i class="fas fa-plus-circle btn-icon"></i> Generate New Payslip
+                            </a>
+                            <a href="employees/form.html" class="btn btn-secondary">
+                                <i class="fas fa-user-plus btn-icon"></i> Add New Employee
+                            </a>
+                            <a href="banking/form.html" class="btn btn-info">
+                                <i class="fas fa-university btn-icon"></i> Add Banking Details
+                            </a>
+                            <a href="accounts/form.html" class="btn btn-success">
+                                <i class="fas fa-user-tag btn-icon"></i> Create Employee Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <!-- Logout Confirmation Modal -->
+    <div class="modal-backdrop" id="logout-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirm Logout</h2>
+                <button type="button" class="modal-close" id="close-logout-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to log out?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancel-logout-btn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-logout-btn">
+                    <i class="fas fa-sign-out-alt btn-icon"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is authenticated
+            if (!isAuthenticated()) {
+                window.location.href = '../pages/login.html';
+                return;
+            }
+            
+            // Get user info from token
+            const userInfo = getUserInfo();
+            if (userInfo) {
+                document.getElementById('user-name').textContent = userInfo.name || userInfo.username;
+            }
+            
+            // Toggle sidebar
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+            
+            // Setup logout modal
+            const logoutBtn = document.getElementById('logout-btn');
+            const logoutModal = document.getElementById('logout-modal');
+            const closeLogoutModal = document.getElementById('close-logout-modal');
+            const cancelLogoutBtn = document.getElementById('cancel-logout-btn');
+            const confirmLogoutBtn = document.getElementById('confirm-logout-btn');
+            
+            logoutBtn.addEventListener('click', () => {
+                logoutModal.classList.add('show');
+            });
+            
+            closeLogoutModal.addEventListener('click', () => {
+                logoutModal.classList.remove('show');
+            });
+            
+            cancelLogoutBtn.addEventListener('click', () => {
+                logoutModal.classList.remove('show');
+            });
+            
+            confirmLogoutBtn.addEventListener('click', async () => {
+                confirmLogoutBtn.disabled = true;
+                confirmLogoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
+                
+                try {
+                    await logout();
+                    showNotification('success', 'Logged Out', 'You have been successfully logged out');
+                    
+                    setTimeout(() => {
+                        window.location.href = '../pages/login.html';
+                    }, 500);
+                } catch (error) {
+                    showNotification('error', 'Logout Failed', error.message || 'Failed to logout');
+                    confirmLogoutBtn.disabled = false;
+                    confirmLogoutBtn.innerHTML = '<i class="fas fa-sign-out-alt btn-icon"></i> Logout';
+                    logoutModal.classList.remove('show');
+                }
+            });
+            
+            // Load dashboard stats
+            try {
+                // Load employee count
+                const employeesResponse = await getEmployees(1, 1);
+                if (employeesResponse.success) {
+                    document.querySelector('#employees-stat .stat-value').textContent = 
+                        employeesResponse.pagination.total_records || 0;
+                }
+                
+                // Load payslip stats
+                const payslipsResponse = await getPayslips(1, 1);
+                if (payslipsResponse.success) {
+                    document.querySelector('#payslips-stat .stat-value').textContent = 
+                        payslipsResponse.pagination.total_records || 0;
+                }
+                
+                // Load pending payments
+                const pendingPayslipsResponse = await getPayslips(1, 1, '', 'Pending');
+                if (pendingPayslipsResponse.success) {
+                    document.querySelector('#pending-stat .stat-value').textContent = 
+                        pendingPayslipsResponse.pagination.total_records || 0;
+                }
+                
+                // Load paid payments
+                const paidPayslipsResponse = await getPayslips(1, 1, '', 'Paid');
+                if (paidPayslipsResponse.success) {
+                    document.querySelector('#paid-stat .stat-value').textContent = 
+                        paidPayslipsResponse.pagination.total_records || 0;
+                }
+                
+                // Load recent payslips
+                const recentPayslipsResponse = await getPayslips(1, 5);
+                if (recentPayslipsResponse.success && recentPayslipsResponse.data.length > 0) {
+                    const recentPayslipsTable = document.getElementById('recent-payslips');
+                    recentPayslipsTable.innerHTML = '';
+                    
+                    recentPayslipsResponse.data.forEach(payslip => {
+                        let statusClass = '';
+                        let statusIcon = '';
+                        
+                        switch (payslip.payment_status) {
+                            case 'Paid':
+                                statusClass = 'text-success';
+                                statusIcon = 'check-circle';
+                                break;
+                            case 'Pending':
+                                statusClass = 'text-warning';
+                                statusIcon = 'clock';
+                                break;
+                            case 'Cancelled':
+                                statusClass = 'text-danger';
+                                statusIcon = 'times-circle';
+                                break;
+                        }
+                        
+                        recentPayslipsTable.innerHTML += `
+                            <tr>
+                                <td>${payslip.payslip_no}</td>
+                                <td>${payslip.employee_name}</td>
+                                <td>${new Date(payslip.payment_date).toLocaleDateString()}</td>
+                                <td>${parseFloat(payslip.total_salary).toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}</td>
+                                <td class="${statusClass}">
+                                    <i class="fas fa-${statusIcon}"></i> ${payslip.payment_status}
+                                </td>
+                                <td class="table-actions">
+                                    <a href="payslips/view.html?id=${payslip.id}" class="btn btn-sm btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="payslips/form.html?id=${payslip.id}" class="btn btn-sm btn-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    document.getElementById('recent-payslips').innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center">No payslips found</td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showNotification('error', 'Data Loading Error', 'Failed to load dashboard data');
+            }
+        });
+    </script>
+    <!-- <script src="../assets/js/components/sidebar.js"></script> -->
+    <!-- <script src="../assets/js/components/header.js"></script> -->
+    <!-- <script src="../assets/js/pages/dashboard.js"></script> -->
+</body>
+</html>

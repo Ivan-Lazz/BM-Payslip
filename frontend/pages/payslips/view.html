@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Payslip - Pay Slip Generator</title>
+    <link rel="stylesheet" href="../../assets/css/variables.css">
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="../../assets/img/favicon.ico" type="image/x-icon">
+    <script src="../../config.js"></script>
+    <!-- <script src="../../assets/js/utils/token.js"></script> -->
+    <!-- <script src="../../assets/js/utils/notifications.js"></script> -->
+    <!-- <script src="../../assets/js/api/api.js"></script> -->
+    <!-- <script src="../../assets/js/api/auth.js"></script> -->
+    <!-- <script src="../../assets/js/api/payslips.js"></script> -->
+    <style>
+        .payslip-view {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .payslip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .payslip-logo {
+            max-width: 120px;
+        }
+        
+        .payslip-company {
+            font-size: var(--font-size-xl);
+            font-weight: bold;
+            text-align: right;
+        }
+        
+        .payslip-title {
+            text-align: center;
+            font-size: var(--font-size-xl);
+            font-weight: bold;
+            margin: 1.5rem 0;
+        }
+        
+        .payslip-no {
+            text-align: center;
+            font-size: var(--font-size-md);
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+        
+        .payslip-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .payslip-section h3 {
+            font-size: var(--font-size-lg);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .info-item {
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            color: var(--text-dark);
+        }
+        
+        .amount-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+        
+        .amount-table th,
+        .amount-table td {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .amount-table th {
+            background-color: var(--primary-very-light);
+            text-align: left;
+        }
+        
+        .amount-table .total-row {
+            font-weight: bold;
+            background-color: var(--primary-very-light);
+        }
+        
+        .payslip-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: var(--font-size-sm);
+        }
+        
+        .status-paid {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #856404;
+        }
+        
+        .status-cancelled {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: var(--danger-color);
+        }
+        
+        @media print {
+            .header, .sidebar, .payslip-actions, .no-print {
+                display: none !important;
+            }
+            
+            .page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .container {
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            
+            .payslip-view {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            
+            body {
+                background-color: white !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="header-menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="header-logo">
+            <img src="../../assets/img/logo.png" alt="Company Logo">
+            <h1>Pay Slip Generator</h1>
+        </div>
+        <div class="header-actions">
+            <div class="user-info" id="user-info">
+                <span class="user-name" id="user-name">Loading...</span>
+                <div class="user-dropdown">
+                    <button class="btn btn-sm btn-outline" id="profile-btn">
+                        <i class="fas fa-user btn-icon"></i> Profile
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="logout-btn">
+                        <i class="fas fa-sign-out-alt btn-icon"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Container -->
+    <div class="page-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="../dashboard.html" class="sidebar-menu-link">
+                        <i class="fas fa-tachometer-alt sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../users/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-users sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Users</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../employees/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-id-card sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employees</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../accounts/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-user-tag sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employee Accounts</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../banking/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-university sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Banking Details</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/index.html" class="sidebar-menu-link active">
+                        <i class="fas fa-file-invoice-dollar sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Payslips</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/form.html" class="sidebar-menu-link">
+                        <i class="fas fa-plus-circle sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Generate Payslip</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h1 class="page-title">View Payslip</h1>
+                    <a href="index.html" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left btn-icon"></i> Back to Payslips
+                    </a>
+                </div>
+
+                <div id="loading-container" class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading payslip...</p>
+                </div>
+
+                <div id="payslip-container" style="display: none;">
+                    <!-- Payslip View -->
+                    <div class="payslip-view">
+                        <div class="payslip-header">
+                            <img src="../../assets/img/logo.png" alt="Company Logo" class="payslip-logo">
+                            <div class="payslip-company" id="company-name">Your Company Name</div>
+                        </div>
+                        
+                        <div class="payslip-title">PAYSLIP</div>
+                        <div class="payslip-no">Payslip No: <span id="payslip-no">-</span></div>
+                        
+                        <div class="payslip-section">
+                            <h3>Employee Information</h3>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Employee Name</div>
+                                    <div class="info-value" id="employee-name">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Employee ID</div>
+                                    <div class="info-value" id="employee-id">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="payslip-section" id="banking-section">
+                            <h3>Banking Information</h3>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Bank</div>
+                                    <div class="info-value" id="bank-name">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Account Number</div>
+                                    <div class="info-value" id="account-number">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Account Holder</div>
+                                    <div class="info-value" id="account-name">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="payslip-section">
+                            <h3>Payment Information</h3>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Person In Charge</div>
+                                    <div class="info-value" id="person-in-charge">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Payment Date</div>
+                                    <div class="info-value" id="payment-date">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Status</div>
+                                    <div class="info-value">
+                                        <span class="status-badge" id="payment-status">-</span>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Cutoff Date</div>
+                                    <div class="info-value" id="cutoff-date">-</div>
+                                </div>
+                            </div>
+                            
+                            <table class="amount-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th style="text-align: right;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Salary</td>
+                                        <td style="text-align: right;" id="salary">0.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bonus</td>
+                                        <td style="text-align: right;" id="bonus">0.00</td>
+                                    </tr>
+                                    <tr class="total-row">
+                                        <td><strong>Total</strong></td>
+                                        <td style="text-align: right;" id="total-salary"><strong>0.00</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: var(--font-size-sm);">
+                            <p>This is a system-generated document.</p>
+                            <p>Generated on <span id="generated-date">-</span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="payslip-actions no-print">
+                        <a href="#" class="btn btn-secondary" id="print-btn">
+                            <i class="fas fa-print btn-icon"></i> Print Payslip
+                        </a>
+                        <a href="#" class="btn btn-primary" id="agent-pdf-link" target="_blank">
+                            <i class="fas fa-file-pdf btn-icon"></i> Download Agent Payslip
+                        </a>
+                        <a href="#" class="btn btn-info" id="admin-pdf-link" target="_blank">
+                            <i class="fas fa-file-pdf btn-icon"></i> Download Admin Payslip
+                        </a>
+                        <a href="#" class="btn btn-success" id="edit-link">
+                            <i class="fas fa-edit btn-icon"></i> Edit Payslip
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is authenticated
+            if (!isAuthenticated()) {
+                window.location.href = '../../pages/login.html';
+                return;
+            }
+            
+            // Get user info from token
+            const userInfo = getUserInfo();
+            if (userInfo) {
+                document.getElementById('user-name').textContent = userInfo.name || userInfo.username;
+            }
+            
+            // Get payslip ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const payslipId = urlParams.get('id');
+            
+            if (!payslipId) {
+                // No ID provided, redirect to payslips list
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Set company name
+            document.getElementById('company-name').textContent = config.companyName;
+            
+            // Load payslip data
+            try {
+                const response = await getPayslip(payslipId);
+                
+                if (response.success) {
+                    const payslip = response.data;
+                    
+                    // Set payslip data
+                    document.getElementById('payslip-no').textContent = payslip.payslip_no;
+                    document.getElementById('employee-name').textContent = payslip.employee_name;
+                    document.getElementById('employee-id').textContent = payslip.employee_id;
+                    
+                    // Banking details
+                    if (payslip.bank_details) {
+                        document.getElementById('bank-name').textContent = payslip.bank_details.preferred_bank;
+                        document.getElementById('account-number').textContent = payslip.bank_details.bank_account_number;
+                        document.getElementById('account-name').textContent = payslip.bank_details.bank_account_name;
+                    }
+                    
+                    // Payment info
+                    document.getElementById('person-in-charge').textContent = payslip.person_in_charge;
+                    
+                    if (payslip.payment_date) {
+                        document.getElementById('payment-date').textContent = new Date(payslip.payment_date).toLocaleDateString();
+                    }
+                    
+                    if (payslip.cutoff_date) {
+                        document.getElementById('cutoff-date').textContent = new Date(payslip.cutoff_date).toLocaleDateString();
+                    }
+                    
+                    // Payment status
+                    const statusElement = document.getElementById('payment-status');
+                    statusElement.textContent = payslip.payment_status;
+                    
+                    // Add status class
+                    if (payslip.payment_status === 'Paid') {
+                        statusElement.className = 'status-badge status-paid';
+                    } else if (payslip.payment_status === 'Pending') {
+                        statusElement.className = 'status-badge status-pending';
+                    } else if (payslip.payment_status === 'Cancelled') {
+                        statusElement.className = 'status-badge status-cancelled';
+                    }
+                    
+                    // Amounts
+                    document.getElementById('salary').textContent = parseFloat(payslip.salary).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    document.getElementById('bonus').textContent = parseFloat(payslip.bonus).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    document.getElementById('total-salary').textContent = parseFloat(payslip.total_salary).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    // Generated date
+                    document.getElementById('generated-date').textContent = new Date(payslip.created_at).toLocaleString();
+                    
+                    // PDF links
+                    document.getElementById('agent-pdf-link').href = `../.${payslip.agent_pdf_path}`;
+                    document.getElementById('admin-pdf-link').href = `../.${payslip.admin_pdf_path}`;
+                    
+                    // Edit link
+                    document.getElementById('edit-link').href = `form.html?id=${payslip.id}`;
+                    
+                    // Show payslip container
+                    document.getElementById('loading-container').style.display = 'none';
+                    document.getElementById('payslip-container').style.display = 'block';
+                    
+                    // Determine if admin or agent view
+                    const viewType = urlParams.get('type') || 'agent';
+                    
+                    // If agent view, hide banking section
+                    if (viewType === 'agent') {
+                        document.getElementById('banking-section').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading payslip:', error);
+                showNotification('error', 'Error', 'Failed to load payslip data');
+                
+                // Show error message
+                document.getElementById('loading-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle alert-icon"></i>
+                        <div>Failed to load payslip. Please try again later.</div>
+                    </div>
+                `;
+            }
+            
+            // Handle print button
+            document.getElementById('print-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.print();
+            });
+            
+            // Toggle sidebar
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+            
+            // Handle logout
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                if (confirm('Are you sure you want to log out?')) {
+                    try {
+                        await logout();
+                        window.location.href = '../../pages/login.html';
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                        showNotification('error', 'Logout Failed', 'Failed to logout');
+                    }
+                }
+            });
+        });
+    </script>
+    <!-- <script src="../../assets/js/components/sidebar.js"></script> -->
+    <!-- <script src="../../assets/js/components/header.js"></script> -->
+    <!-- <script src="../../assets/js/pages/payslips/view.js"></script> -->
+</body>
+</html>
