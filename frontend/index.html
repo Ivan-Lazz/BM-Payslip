@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Slip Generator</title>
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="assets/img/favicon.ico" type="image/x-icon">
+    <script src="config.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Content will be loaded here by the router -->
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is authenticated
+            if (!isAuthenticated() && !window.location.pathname.includes('/login.html')) {
+                // Redirect to login page if not authenticated
+                window.location.href = 'pages/login.html';
+            } else if (isAuthenticated() && window.location.pathname === '/') {
+                // Redirect to dashboard if authenticated and at root
+                window.location.href = 'pages/dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>

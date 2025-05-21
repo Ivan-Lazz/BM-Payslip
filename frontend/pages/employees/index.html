@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees - Pay Slip Generator</title>
+    <link rel="stylesheet" href="../../assets/css/variables.css">
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="../../assets/img/favicon.ico" type="image/x-icon">
+    <script src="../../config.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="header-menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="header-logo">
+            <img src="../../assets/img/logo.png" alt="Company Logo">
+            <h1>Pay Slip Generator</h1>
+        </div>
+        <div class="header-actions">
+            <div class="user-info" id="user-info">
+                <span class="user-name" id="user-name">Loading...</span>
+                <div class="user-dropdown">
+                    <button class="btn btn-sm btn-outline" id="profile-btn">
+                        <i class="fas fa-user btn-icon"></i> Profile
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="logout-btn">
+                        <i class="fas fa-sign-out-alt btn-icon"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Container -->
+    <div class="page-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="../dashboard.html" class="sidebar-menu-link">
+                        <i class="fas fa-tachometer-alt sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../users/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-users sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Users</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../employees/index.html" class="sidebar-menu-link active">
+                        <i class="fas fa-id-card sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employees</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../accounts/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-user-tag sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Employee Accounts</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../banking/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-university sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Banking Details</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/index.html" class="sidebar-menu-link">
+                        <i class="fas fa-file-invoice-dollar sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Payslips</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="../payslips/form.html" class="sidebar-menu-link">
+                        <i class="fas fa-plus-circle sidebar-menu-icon"></i>
+                        <span class="sidebar-menu-text">Generate Payslip</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h1 class="page-title">Employees</h1>
+                    <a href="form.html" class="btn btn-primary">
+                        <i class="fas fa-plus-circle btn-icon"></i> Add New Employee
+                    </a>
+                </div>
+
+                <!-- Filters -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Filters</h2>
+                        <button type="button" class="btn btn-sm btn-outline" id="toggle-filters">
+                            <i class="fas fa-filter btn-icon"></i> Toggle Filters
+                        </button>
+                    </div>
+                    <div class="card-body" id="filters-container" style="display: none;">
+                        <form id="filter-form" class="form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="search" class="form-label">Search</label>
+                                    <input type="text" id="search" class="form-input" placeholder="Search by ID, Name, Email...">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search btn-icon"></i> Apply Filters
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="reset-filters">
+                                    <i class="fas fa-undo btn-icon"></i> Reset Filters
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Employees Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="employee_id">Employee ID</th>
+                                        <th data-sort="firstname">First Name</th>
+                                        <th data-sort="lastname">Last Name</th>
+                                        <th data-sort="email">Email</th>
+                                        <th data-sort="contact_number">Contact Number</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employees-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="loading-container">
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading employees...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <div class="pagination-info">
+                                <span id="pagination-info">Showing 0-0 of 0 employees</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <div class="form-row" style="margin-bottom: 0;">
+                                    <div class="form-group" style="margin-bottom: 0; margin-right: 1rem;">
+                                        <select id="per-page" class="form-select">
+                                            <option value="10">10 per page</option>
+                                            <option value="25">25 per page</option>
+                                            <option value="50">50 per page</option>
+                                            <option value="100">100 per page</option>
+                                        </select>
+                                    </div>
+                                    <ul class="pagination" id="pagination">
+                                        <!-- Pagination will be generated here -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-backdrop" id="delete-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirm Delete</h2>
+                <button type="button" class="modal-close" id="close-delete-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this employee?</p>
+                <p><strong>Employee ID: </strong><span id="delete-employee-id"></span></p>
+                <p><strong>Name: </strong><span id="delete-employee-name"></span></p>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle alert-icon"></i>
+                    <div>This action cannot be undone. Deleting an employee will also delete all associated accounts, banking details, and payslips.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn" data-id="">
+                    <i class="fas fa-trash-alt btn-icon"></i> Delete Employee
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is authenticated
+            if (!isAuthenticated()) {
+                window.location.href = '../../pages/login.html';
+                return;
+            }
+            
+            // Get user info from token
+            const userInfo = getUserInfo();
+            if (userInfo) {
+                document.getElementById('user-name').textContent = userInfo.name || userInfo.username;
+            }
+            
+            // State variables
+            let currentPage = 1;
+            let perPage = 10;
+            let totalRecords = 0;
+            let totalPages = 0;
+            let sortField = 'employee_id';
+            let sortDirection = 'asc';
+            let searchTerm = '';
+            
+            // Toggle filters
+            const toggleFilters = document.getElementById('toggle-filters');
+            const filtersContainer = document.getElementById('filters-container');
+            
+            toggleFilters.addEventListener('click', () => {
+                filtersContainer.style.display = filtersContainer.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            // Apply filters
+            const filterForm = document.getElementById('filter-form');
+            
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                searchTerm = document.getElementById('search').value;
+                
+                // Reset to first page
+                currentPage = 1;
+                
+                // Load employees with filters
+                loadEmployees();
+            });
+            
+            // Reset filters
+            document.getElementById('reset-filters').addEventListener('click', () => {
+                document.getElementById('search').value = '';
+                
+                // Reset filter variables
+                searchTerm = '';
+                
+                // Reset to first page
+                currentPage = 1;
+                
+                // Load employees without filters
+                loadEmployees();
+            });
+            
+            // Handle per page change
+            document.getElementById('per-page').addEventListener('change', function() {
+                perPage = parseInt(this.value);
+                currentPage = 1; // Reset to first page
+                loadEmployees();
+            });
+            
+            // Handle table header sorting
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.getAttribute('data-sort');
+                    
+                    // Toggle direction if same field, otherwise default to asc
+                    if (field === sortField) {
+                        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortField = field;
+                        sortDirection = 'asc';
+                    }
+                    
+                    // Update UI to show sort direction
+                    document.querySelectorAll('th[data-sort]').forEach(header => {
+                        header.classList.remove('sorted-asc', 'sorted-desc');
+                    });
+                    
+                    th.classList.add(`sorted-${sortDirection}`);
+                    
+                    // Reload employees with new sort
+                    loadEmployees();
+                });
+            });
+            
+            // Load employees function
+            async function loadEmployees() {
+                try {
+                    const tableBody = document.getElementById('employees-table-body');
+                    
+                    // Show loading spinner
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <p>Loading employees...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    
+                    const response = await getEmployees(
+                        currentPage,
+                        perPage,
+                        searchTerm
+                    );
+                    
+                    if (response.success) {
+                        // Update pagination variables
+                        totalRecords = response.pagination.total_records;
+                        totalPages = response.pagination.total_pages;
+                        
+                        // Update pagination info
+                        const start = (currentPage - 1) * perPage + 1;
+                        const end = Math.min(start + perPage - 1, totalRecords);
+                        document.getElementById('pagination-info').textContent = 
+                            `Showing ${totalRecords > 0 ? start : 0}-${end} of ${totalRecords} employees`;
+                        
+                        // Render employees
+                        if (response.data.length > 0) {
+                            let html = '';
+                            
+                            response.data.forEach(employee => {
+                                html += `
+                                    <tr>
+                                        <td>${employee.employee_id}</td>
+                                        <td>${employee.firstname}</td>
+                                        <td>${employee.lastname}</td>
+                                        <td>${employee.email || '-'}</td>
+                                        <td>${employee.contact_number || '-'}</td>
+                                        <td class="table-actions">
+                                            <a href="form.html?id=${employee.employee_id}" class="btn btn-sm btn-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger delete-btn" title="Delete" 
+                                                data-id="${employee.employee_id}" 
+                                                data-name="${employee.firstname} ${employee.lastname}">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-info dropdown-toggle" title="More Actions">
+                                                    <i class="fas fa-ellipsis-h"></i>
+                                                </button>
+                                                <div class="dropdown-menu">
+                                                    <a href="../accounts/form.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-user-tag"></i> Add Account
+                                                    </a>
+                                                    <a href="../banking/form.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-university"></i> Add Banking Details
+                                                    </a>
+                                                    <a href="../payslips/form.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-file-invoice-dollar"></i> Generate Payslip
+                                                    </a>
+                                                    <a href="../accounts/index.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-list"></i> View Accounts
+                                                    </a>
+                                                    <a href="../banking/index.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-list"></i> View Banking Details
+                                                    </a>
+                                                    <a href="../payslips/index.html?employee_id=${employee.employee_id}" class="dropdown-item">
+                                                        <i class="fas fa-list"></i> View Payslips
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            tableBody.innerHTML = html;
+                            
+                            // Setup delete buttons
+                            document.querySelectorAll('.delete-btn').forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                    // Set data in delete modal
+                                    const employeeId = btn.getAttribute('data-id');
+                                    const employeeName = btn.getAttribute('data-name');
+                                    
+                                    document.getElementById('delete-employee-id').textContent = employeeId;
+                                    document.getElementById('delete-employee-name').textContent = employeeName;
+                                    document.getElementById('confirm-delete-btn').setAttribute('data-id', employeeId);
+                                    
+                                    // Show delete modal
+                                    document.getElementById('delete-modal').classList.add('show');
+                                });
+                            });
+                            
+                            // Setup dropdown menus
+                            document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+                                toggle.addEventListener('click', function() {
+                                    const menu = this.nextElementSibling;
+                                    menu.classList.toggle('show');
+                                    
+                                    // Close all other dropdowns
+                                    document.querySelectorAll('.dropdown-menu.show').forEach(openMenu => {
+                                        if (openMenu !== menu) {
+                                            openMenu.classList.remove('show');
+                                        }
+                                    });
+                                });
+                            });
+                            
+                            // Close dropdowns when clicking outside
+                            document.addEventListener('click', (e) => {
+                                if (!e.target.closest('.btn-group')) {
+                                    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                                        menu.classList.remove('show');
+                                    });
+                                }
+                            });
+                        } else {
+                            tableBody.innerHTML = `
+                                <tr>
+                                    <td colspan="6" class="text-center">No employees found</td>
+                                </tr>
+                            `;
+                        }
+                        
+                        // Render pagination
+                        renderPagination();
+                    }
+                } catch (error) {
+                    console.error('Error loading employees:', error);
+                    document.getElementById('employees-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle alert-icon"></i>
+                                    <div>Failed to load employees. Please try again.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            // Render pagination
+            function renderPagination() {
+                const pagination = document.getElementById('pagination');
+                let html = '';
+                
+                // Previous button
+                html += `
+                    <li class="pagination-item">
+                        <button class="pagination-link${currentPage === 1 ? ' disabled' : ''}" 
+                            ${currentPage === 1 ? 'disabled' : 'data-page="' + (currentPage - 1) + '"'}>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    </li>
+                `;
+                
+                // Page numbers
+                const maxPages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+                let endPage = Math.min(totalPages, startPage + maxPages - 1);
+                
+                // Adjust start if needed
+                if (endPage - startPage + 1 < maxPages) {
+                    startPage = Math.max(1, endPage - maxPages + 1);
+                }
+                
+                // First page
+                if (startPage > 1) {
+                    html += `
+                        <li class="pagination-item">
+                            <button class="pagination-link" data-page="1">1</button>
+                        </li>
+                    `;
+                    
+                    if (startPage > 2) {
+                        html += `
+                            <li class="pagination-item">
+                                <span class="pagination-ellipsis">...</span>
+                            </li>
+                        `;
+                    }
+                }
+                
+                // Page links
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `
+                        <li class="pagination-item">
+                            <button class="pagination-link${i === currentPage ? ' active' : ''}" 
+                                data-page="${i}">${i}</button>
+                        </li>
+                    `;
+                }
+                
+                // Last page
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `
+                            <li class="pagination-item">
+                                <span class="pagination-ellipsis">...</span>
+                            </li>
+                        `;
+                    }
+                    
+                    html += `
+                        <li class="pagination-item">
+                            <button class="pagination-link" data-page="${totalPages}">${totalPages}</button>
+                        </li>
+                    `;
+                }
+                
+                // Next button
+                html += `
+                    <li class="pagination-item">
+                        <button class="pagination-link${currentPage === totalPages ? ' disabled' : ''}" 
+                            ${currentPage === totalPages ? 'disabled' : 'data-page="' + (currentPage + 1) + '"'}>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </li>
+                `;
+                
+                pagination.innerHTML = html;
+                
+                // Add event listeners to pagination buttons
+                document.querySelectorAll('.pagination-link:not(.disabled)').forEach(button => {
+                    button.addEventListener('click', () => {
+                        currentPage = parseInt(button.getAttribute('data-page'));
+                        loadEmployees();
+                    });
+                });
+            }
+            
+            // Handle delete confirmation
+            document.getElementById('close-delete-modal').addEventListener('click', () => {
+                document.getElementById('delete-modal').classList.remove('show');
+            });
+            
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+                document.getElementById('delete-modal').classList.remove('show');
+            });
+            
+            document.getElementById('confirm-delete-btn').addEventListener('click', async function() {
+                const employeeId = this.getAttribute('data-id');
+                
+                try {
+                    // Disable delete button
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                    
+                    // Delete employee
+                    const response = await deleteEmployee(employeeId);
+                    
+                    if (response.success) {
+                        // Show success notification
+                        showNotification('success', 'Success', 'Employee deleted successfully');
+                        
+                        // Close modal
+                        document.getElementById('delete-modal').classList.remove('show');
+                        
+                        // Reload employees
+                        loadEmployees();
+                    }
+                } catch (error) {
+                    console.error('Error deleting employee:', error);
+                    showNotification('error', 'Error', 'Failed to delete employee');
+                    
+                    // Reset delete button
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-trash-alt btn-icon"></i> Delete Employee';
+                }
+            });
+            
+            // Toggle sidebar
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+            
+            // Handle logout
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                if (confirm('Are you sure you want to log out?')) {
+                    try {
+                        await logout();
+                        window.location.href = '../../pages/login.html';
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                        showNotification('error', 'Logout Failed', 'Failed to logout');
+                    }
+                }
+            });
+            
+            // Initial load
+            loadEmployees();
+        });
+    </script>
+</body>
+</html>
