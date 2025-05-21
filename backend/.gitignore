@@ -53,3 +53,16 @@ Thumbs.db
 npm-debug.log
 yarn-error.log
 .sass-cache/
+
+# Ignore FPDF contents but keep directory
+lib/fpdf/*
+!lib/fpdf/.gitkeep
+
+# Ignore other common files
+.DS_Store
+Thumbs.db
+*.log
+vendor/
+.env
+.env.*
+!.env.example
