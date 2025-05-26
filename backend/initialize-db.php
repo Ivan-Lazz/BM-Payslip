@@ -186,7 +186,7 @@ try {
         $firstname = "Admin";
         $lastname = "User";
         $username = "admin";
-        $password = password_hash("Admin@123", PASSWORD_BCRYPT, ['cost' => 12]);
+        $password = password_hash("admin123", PASSWORD_BCRYPT, ['cost' => 12]);
         $email = "admin@example.com";
         $role = "admin";
         $status = "active";
@@ -204,7 +204,7 @@ try {
         $stmt->bindParam(':status', $status);
         $stmt->execute();
         
-        echo "<p class='success'>✓ Created admin user with username 'admin' and password 'Admin@123'</p>";
+        echo "<p class='success'>✓ Created admin user with username 'admin' and password 'admin123'</p>";
     }
     
     echo "</div>";
@@ -252,7 +252,7 @@ try {
         <p>Admin login credentials:</p>
         <ul>
             <li><strong>Username:</strong> admin</li>
-            <li><strong>Password:</strong> Admin@123</li>
+            <li><strong>Password:</strong> admin123</li>
         </ul>
         <p>Important: Please change this default password after your first login!</p>
         <a href='testPayRollFront/pages/index.html' class='btn'>Go to Login Page</a>

@@ -20,6 +20,24 @@ class BankingController extends BaseController {
     }
     
     /**
+     * Handle API request - Override to handle employee subresource
+     * 
+     * @param string $method HTTP method
+     * @param string|null $id Resource identifier
+     * @param string|null $subResource Sub-resource name
+     */
+    public function handleRequest($method, $id = null, $subResource = null) {
+        // Handle /banking/employee/{employee_id} route
+        if ($id === 'employee' && $subResource && $method === 'GET') {
+            $this->getBankingByEmployee($subResource);
+            return;
+        }
+        
+        // Handle normal CRUD operations
+        parent::handleRequest($method, $id, $subResource);
+    }
+    
+    /**
      * Get all banking details with pagination
      */
     protected function getAll() {
@@ -223,28 +241,39 @@ class BankingController extends BaseController {
      *
      * @param string $employeeId Employee ID
      */
+    private function getBankingByEmployee($employeeId) {
+        try {
+            // Check if employee exists
+            $employeeModel = new Employee($this->db);
+            if (!$employeeModel->employeeExists($employeeId)) {
+                ResponseHandler::notFound('Employee not found');
+                return;
+            }
+            
+            // Get banking details for employee
+            $stmt = $this->bankingModel->readByEmployeeId($employeeId);
+            $bankingDetails = [];
+            
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $bankingDetails[] = $row;
+            }
+            
+            ResponseHandler::success('Banking details retrieved successfully', $bankingDetails);
+        } catch (Exception $e) {
+            ResponseHandler::serverError('Error retrieving banking details: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Handle subresource requests - Keep original method for compatibility
+     *
+     * @param string $id ID
+     * @param string $subResource Subresource name
+     * @param string $method HTTP method
+     */
     protected function handleSubresource($id, $subResource, $method = 'GET') {
         if ($subResource === 'employee' && $method === 'GET') {
-            try {
-                // Check if employee exists
-                $employeeModel = new Employee($this->db);
-                if (!$employeeModel->employeeExists($id)) {
-                    ResponseHandler::notFound('Employee not found');
-                    return;
-                }
-                
-                // Get banking details for employee
-                $stmt = $this->bankingModel->readByEmployeeId($id);
-                $bankingDetails = [];
-                
-                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $bankingDetails[] = $row;
-                }
-                
-                ResponseHandler::success('Banking details retrieved successfully', $bankingDetails);
-            } catch (Exception $e) {
-                ResponseHandler::serverError('Error retrieving banking details: ' . $e->getMessage());
-            }
+            $this->getBankingByEmployee($id);
         } else {
             ResponseHandler::notFound('Subresource not found');
         }

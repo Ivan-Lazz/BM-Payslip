@@ -54,21 +54,24 @@ class AuthController {
      * Login user
      */
     private function login() {
-        // Create initial admin user if no users exist
-        $this->ensureInitialUserExists();
-        
+        try {
         // Get input data
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             $data = $_POST;
         }
+            
+            // Log received data for debugging
+            error_log('Login request data: ' . print_r($data, true));
         
         // Validate input
         $this->validator->setData($data);
         $this->validator->required(['username', 'password']);
         
         if (!$this->validator->isValid()) {
-            ResponseHandler::badRequest('Invalid input', $this->validator->getErrors());
+                $errors = $this->validator->getErrors();
+                error_log('Validation errors: ' . print_r($errors, true));
+                ResponseHandler::badRequest('Invalid input', $errors);
             return;
         }
         
@@ -77,6 +80,7 @@ class AuthController {
         $username = $data['username'];
         $password = $data['password'];
         
+            try {
         // Check if user exists
         $query = "SELECT * FROM users WHERE username = :username";
         $stmt = $this->db->prepare($query);
@@ -100,16 +104,57 @@ class AuthController {
         if (!password_verify($password, $user['password'])) {
             ResponseHandler::unauthorized('Invalid username or password');
             return;
+                }
+                
+            } catch (PDOException $e) {
+                // If database doesn't exist or tables are missing, try to initialize
+                if ($e->getCode() == 1049 || $e->getCode() == '42S02') {
+                    error_log('Database or table not found, initializing...');
+                    $this->initializeDatabase();
+                    
+                    // Check if this is the initial admin login
+                    if ($username === 'admin' && $password === 'admin123') {
+                        // Create initial admin user
+                        $this->ensureInitialUserExists();
+                        
+                        // Retry login
+                        $this->login();
+                        return;
+                    }
+                    
+                    ResponseHandler::unauthorized('Invalid username or password');
+                    return;
+                }
+                throw $e;
         }
         
         // Remove password from user data
         unset($user['password']);
+            
+            // Generate JWT token
+            $token = TokenManager::generateToken([
+                'user_id' => $user['id'],
+                'username' => $user['username'],
+                'role' => $user['role']
+            ]);
         
         // Store user data in session
         $_SESSION['user'] = $user;
         $_SESSION['last_activity'] = time();
         
-        ResponseHandler::success('Login successful', $user);
+            // Return success response with token
+            ResponseHandler::success('Login successful', [
+                'user' => $user,
+                'token' => $token
+            ]);
+            
+        } catch (PDOException $e) {
+            error_log('Database error: ' . $e->getMessage());
+            ResponseHandler::error('Database error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            error_log('Server error: ' . $e->getMessage());
+            ResponseHandler::error('Server error: ' . $e->getMessage());
+        }
     }
     
     /**
@@ -146,18 +191,76 @@ class AuthController {
         
         if ($result['count'] === 0) {
             // Create initial admin user
-            $username = 'admin';
-            $password = password_hash('Admin@123', PASSWORD_DEFAULT);
-            $role = 'admin';
-            $status = 'active';
+            $firstname = "Admin";
+            $lastname = "User";
+            $username = "admin";
+            $password = password_hash("admin123", PASSWORD_DEFAULT);
+            $email = "admin@example.com";
+            $role = "admin";
+            $status = "active";
             
-            $query = "INSERT INTO users (username, password, role, status) VALUES (:username, :password, :role, :status)";
+            $query = "INSERT INTO users (firstname, lastname, username, password, email, role, status) 
+                     VALUES (:firstname, :lastname, :username, :password, :email, :role, :status)";
             $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':firstname', $firstname);
+            $stmt->bindParam(':lastname', $lastname);
             $stmt->bindParam(':username', $username);
             $stmt->bindParam(':password', $password);
+            $stmt->bindParam(':email', $email);
             $stmt->bindParam(':role', $role);
             $stmt->bindParam(':status', $status);
             $stmt->execute();
+        }
+    }
+    
+    /**
+     * Initialize database and tables
+     */
+    private function initializeDatabase() {
+        try {
+            // Load database configuration
+            $config = require __DIR__ . '/../config/database.php';
+            
+            // Create database instance
+            require_once __DIR__ . '/../config/db.php';
+            $database = new Database();
+            
+            // Initialize database and tables
+            $database->initializeDatabase();
+            
+            // Create required directories
+            $this->createRequiredDirectories();
+            
+            error_log('Database initialized successfully');
+            return true;
+        } catch (Exception $e) {
+            error_log('Database initialization failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    /**
+     * Create required directories for the application
+     */
+    private function createRequiredDirectories() {
+        $directories = [
+            __DIR__ . '/../logs',
+            __DIR__ . '/../storage/pdfs/agent',
+            __DIR__ . '/../storage/pdfs/admin'
+        ];
+        
+        foreach ($directories as $dir) {
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            
+            // Create .htaccess to protect PDF directories
+            if (strpos($dir, 'pdfs') !== false) {
+                $htaccess = $dir . '/.htaccess';
+                if (!file_exists($htaccess)) {
+                    file_put_contents($htaccess, "Deny from all\n");
+                }
+            }
         }
     }
 }

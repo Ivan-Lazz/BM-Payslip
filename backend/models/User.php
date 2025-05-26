@@ -42,10 +42,10 @@ class User {
         
         $whereClause = '';
         if (!empty($search)) {
-            $whereClause = "WHERE firstname LIKE :search 
-                           OR lastname LIKE :search 
-                           OR username LIKE :search
-                           OR email LIKE :search";
+            $whereClause = "WHERE firstname LIKE :search1 
+                           OR lastname LIKE :search2 
+                           OR username LIKE :search3
+                           OR email LIKE :search4";
         }
         
         $query = "SELECT id, firstname, lastname, username, email, role, status, created_at, updated_at 
@@ -58,7 +58,10 @@ class User {
         
         if (!empty($search)) {
             $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
+            $stmt->bindParam(':search1', $searchTerm);
+            $stmt->bindParam(':search2', $searchTerm);
+            $stmt->bindParam(':search3', $searchTerm);
+            $stmt->bindParam(':search4', $searchTerm);
         }
         
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
@@ -78,10 +81,10 @@ class User {
     public function countAll($search = '') {
         $whereClause = '';
         if (!empty($search)) {
-            $whereClause = "WHERE firstname LIKE :search 
-                           OR lastname LIKE :search 
-                           OR username LIKE :search
-                           OR email LIKE :search";
+            $whereClause = "WHERE firstname LIKE :search1 
+                           OR lastname LIKE :search2 
+                           OR username LIKE :search3
+                           OR email LIKE :search4";
         }
         
         $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " {$whereClause}";
@@ -90,7 +93,10 @@ class User {
         
         if (!empty($search)) {
             $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
+            $stmt->bindParam(':search1', $searchTerm);
+            $stmt->bindParam(':search2', $searchTerm);
+            $stmt->bindParam(':search3', $searchTerm);
+            $stmt->bindParam(':search4', $searchTerm);
         }
         
         $stmt->execute();

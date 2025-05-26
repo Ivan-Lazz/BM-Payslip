@@ -82,8 +82,8 @@ CREATE TABLE IF NOT EXISTS `payslips` (
 
 -- Insert default admin user (only if no users exist)
 INSERT INTO `users` (`firstname`, `lastname`, `username`, `password`, `email`, `role`, `status`) 
-SELECT 'Admin', 'User', 'admin', '$2y$12$hZC1fKFa4VVxf1eL7HWw.unBwn0dGmHRwS4hJvJFRzsY2ZKC8Vdwe', 'admin@example.com', 'admin', 'active'
+SELECT 'Admin', 'User', 'admin', '$2y$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewYpR0.5J5Q8qK8y', 'admin@example.com', 'admin', 'active'
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 
--- Password is 'Admin@123' - change this immediately after first login
+-- Password is 'admin123' - change this immediately after first login

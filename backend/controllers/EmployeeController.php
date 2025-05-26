@@ -29,6 +29,8 @@ class EmployeeController extends BaseController {
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : DEFAULT_PAGE_SIZE;
             $search = isset($_GET['search']) ? $_GET['search'] : '';
+            $sortField = isset($_GET['sort_field']) ? $_GET['sort_field'] : 'employee_id';
+            $sortDirection = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'ASC';
             
             // Validate pagination parameters
             $page = max(1, $page);

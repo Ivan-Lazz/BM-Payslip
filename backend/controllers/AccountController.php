@@ -30,6 +30,9 @@ class AccountController extends BaseController {
             $search = isset($_GET['search']) ? $_GET['search'] : '';
             $type = isset($_GET['type']) ? $_GET['type'] : '';
             
+            // Debug log
+            error_log("Account API Request - Page: $page, PerPage: $perPage, Search: '$search', Type: '$type'");
+            
             // Validate pagination parameters
             $page = max(1, $page);
             $perPage = min(max(1, $perPage), MAX_PAGE_SIZE);
@@ -38,7 +41,7 @@ class AccountController extends BaseController {
             $this->accountModel->page = $page;
             $this->accountModel->records_per_page = $perPage;
             
-            // Get account data
+            // Get account data - use the fixed method
             $stmt = $this->accountModel->readPaginated($search, $type);
             $accounts = [];
             
@@ -51,9 +54,14 @@ class AccountController extends BaseController {
             // Get total count for pagination
             $totalRecords = $this->accountModel->countAll($search, $type);
             
+            // Debug log
+            error_log("Account API Response - Found " . count($accounts) . " accounts, Total: $totalRecords");
+            
             // Return paginated response
             ResponseHandler::paginated($accounts, $page, $perPage, $totalRecords);
         } catch (Exception $e) {
+            error_log("Account API Error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             ResponseHandler::serverError('Error retrieving accounts: ' . $e->getMessage());
         }
     }
@@ -207,25 +215,45 @@ class AccountController extends BaseController {
      */
     protected function delete($id) {
         try {
+            // Debug log
+            error_log("AccountController::delete called with ID: " . $id);
+            
+            // Validate ID
+            if (empty($id) || !is_numeric($id)) {
+                error_log("Invalid account ID provided: " . $id);
+                ResponseHandler::badRequest('Invalid account ID');
+                return;
+            }
+            
             // Check if account exists
             $stmt = $this->accountModel->readOne($id);
             if ($stmt->rowCount() === 0) {
+                error_log("Account not found with ID: " . $id);
                 ResponseHandler::notFound('Account not found');
                 return;
             }
+            
+            // Get account info for logging
+            $accountInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Deleting account: " . json_encode($accountInfo));
             
             // Set ID and delete
             $this->accountModel->account_id = $id;
             
             if ($this->accountModel->delete()) {
+                error_log("Account deleted successfully: " . $id);
                 ResponseHandler::success('Account deleted successfully');
             } else {
+                error_log("Failed to delete account: " . $id);
                 ResponseHandler::serverError('Failed to delete account');
             }
         } catch (Exception $e) {
+            error_log("Exception in AccountController::delete: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             ResponseHandler::serverError('Error deleting account: ' . $e->getMessage());
         }
     }
+
     
     /**
      * Get account types

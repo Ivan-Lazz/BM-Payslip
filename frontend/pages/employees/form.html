@@ -248,31 +248,24 @@
     <div class="modal-backdrop" id="success-modal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">Employee Saved Successfully</h2>
+                <h2 class="modal-title">Success</h2>
                 <button type="button" class="modal-close" id="close-success-modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle alert-icon"></i>
-                    <div id="success-message">Employee has been added successfully!</div>
-                </div>
-                
-                <div style="margin-top: 1rem;">
-                    <h4>What would you like to do next?</h4>
+                    <div id="success-message">Employee saved successfully!</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="return-list-btn">
-                    <i class="fas fa-list btn-icon"></i> Return to List
+                <button type="button" class="btn btn-secondary" id="close-success-btn">
+                    Close
                 </button>
-                <button type="button" class="btn btn-primary" id="add-account-btn">
-                    <i class="fas fa-user-tag btn-icon"></i> Add Account
-                </button>
-                <button type="button" class="btn btn-info" id="add-banking-btn">
-                    <i class="fas fa-university btn-icon"></i> Add Banking Details
-                </button>
-                <button type="button" class="btn btn-success" id="create-new-btn">
-                    <i class="fas fa-plus-circle btn-icon"></i> Create Another
+                <a href="index.html" class="btn btn-primary" id="back-to-list-btn">
+                    <i class="fas fa-list btn-icon"></i> Back to List
+                </a>
+                <button type="button" class="btn btn-success" id="add-another-btn">
+                    <i class="fas fa-plus-circle btn-icon"></i> Add Another
                 </button>
             </div>
         </div>
@@ -281,245 +274,7 @@
     <!-- Notifications -->
     <div id="notifications" class="notifications"></div>
     
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check if user is authenticated
-            if (!isAuthenticated()) {
-                window.location.href = '../../pages/login.html';
-                return;
-            }
-            
-            // Get user info from token
-            const userInfo = getUserInfo();
-            if (userInfo) {
-                document.getElementById('user-name').textContent = userInfo.name || userInfo.username;
-            }
-            
-            // Initialize form validator
-            const validator = new FormValidator();
-            validator.setupFormValidation(document.getElementById('employeeForm'));
-            
-            // Check if editing existing employee
-            const urlParams = new URLSearchParams(window.location.search);
-            const employeeId = urlParams.get('id');
-            
-            let isEditMode = false;
-            let generatedId = null;
-            
-            // Generate employee ID button
-            document.getElementById('generate-id-btn').addEventListener('click', async () => {
-                try {
-                    // Disable button during API call
-                    const btn = document.getElementById('generate-id-btn');
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    
-                    // Generate new ID
-                    generatedId = await generateEmployeeId();
-                    document.getElementById('employee_id').value = generatedId;
-                    
-                    // Re-enable button
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-                } catch (error) {
-                    console.error('Error generating employee ID:', error);
-                    showNotification('error', 'Error', 'Failed to generate employee ID');
-                    
-                    // Re-enable button
-                    document.getElementById('generate-id-btn').disabled = false;
-                    document.getElementById('generate-id-btn').innerHTML = '<i class="fas fa-sync-alt"></i>';
-                }
-            });
-            
-            // If editing existing employee, load employee data
-            if (employeeId) {
-                try {
-                    const response = await getEmployee(employeeId);
-                    
-                    if (response.success) {
-                        isEditMode = true;
-                        
-                        // Update form title and submit button
-                        document.getElementById('form-title').textContent = 'Edit Employee';
-                        document.getElementById('submit-text').textContent = 'Update Employee';
-                        
-                        // Populate form fields
-                        const employee = response.data;
-                        document.getElementById('employee_id').value = employee.employee_id;
-                        document.getElementById('firstname').value = employee.firstname;
-                        document.getElementById('lastname').value = employee.lastname;
-                        document.getElementById('contact_number').value = employee.contact_number || '';
-                        document.getElementById('email').value = employee.email || '';
-                        
-                        // Hide generate ID button in edit mode
-                        document.getElementById('generate-id-btn').style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error('Error loading employee:', error);
-                    showNotification('error', 'Error', 'Failed to load employee data');
-                }
-            } else {
-                // Generate initial employee ID for new employee
-                try {
-                    generatedId = await generateEmployeeId();
-                    document.getElementById('employee_id').value = generatedId;
-                } catch (error) {
-                    console.error('Error generating initial employee ID:', error);
-                    document.getElementById('employee_id').value = 'Error generating ID';
-                }
-            }
-            
-            // Handle form submission
-            document.getElementById('employeeForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                // Validate form manually
-                const isValid = !validator.hasErrors();
-                
-                if (!isValid) {
-                    showNotification('error', 'Validation Error', 'Please fix the errors in the form');
-                    return;
-                }
-                
-                // Prepare employee data
-                const employeeData = {
-                    employee_id: document.getElementById('employee_id').value,
-                    firstname: document.getElementById('firstname').value,
-                    lastname: document.getElementById('lastname').value,
-                    contact_number: document.getElementById('contact_number').value || null,
-                    email: document.getElementById('email').value || null
-                };
-                
-                // Disable submit button to prevent multiple submissions
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isEditMode ? 'Updating...' : 'Adding...'}`;
-                
-                try {
-                    let response;
-                    
-                    if (isEditMode) {
-                        // Update existing employee
-                        response = await updateEmployee(employeeData.employee_id, employeeData);
-                        
-                        if (response.success) {
-                            // Show success message
-                            document.getElementById('success-message').textContent = 'Employee has been updated successfully!';
-                            
-                            // Hide 'Create Another' button in edit mode
-                            document.getElementById('create-new-btn').style.display = 'none';
-                            
-                            // Show success modal
-                            document.getElementById('success-modal').classList.add('show');
-                        }
-                    } else {
-                        // Create new employee
-                        response = await createEmployee(employeeData);
-                        
-                        if (response.success) {
-                            // Show success message
-                            document.getElementById('success-message').textContent = 'Employee has been added successfully!';
-                            
-                            // Show 'Create Another' button
-                            document.getElementById('create-new-btn').style.display = 'inline-block';
-                            
-                            // Set employee ID in modal buttons
-                            const employeeId = response.data.employee_id;
-                            document.getElementById('add-account-btn').setAttribute('data-id', employeeId);
-                            document.getElementById('add-banking-btn').setAttribute('data-id', employeeId);
-                            
-                            // Show success modal
-                            document.getElementById('success-modal').classList.add('show');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error saving employee:', error);
-                    showNotification('error', 'Error', `Failed to ${isEditMode ? 'update' : 'add'} employee`);
-                    
-                    // Re-enable submit button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<i class="fas fa-save btn-icon"></i> ${isEditMode ? 'Update Employee' : 'Add Employee'}`;
-                }
-            });
-            
-            // Handle reset button
-            document.getElementById('reset-btn').addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset the form?')) {
-                    document.getElementById('employeeForm').reset();
-                    
-                    // Re-populate ID if in add mode
-                    if (!isEditMode && generatedId) {
-                        document.getElementById('employee_id').value = generatedId;
-                    } else if (isEditMode) {
-                        // Reload employee data if in edit mode
-                        location.reload();
-                    }
-                }
-            });
-            
-            // Success modal actions
-            document.getElementById('close-success-modal').addEventListener('click', () => {
-                document.getElementById('success-modal').classList.remove('show');
-            });
-            
-            document.getElementById('return-list-btn').addEventListener('click', () => {
-                window.location.href = 'index.html';
-            });
-            
-            document.getElementById('add-account-btn').addEventListener('click', function() {
-                const employeeId = this.getAttribute('data-id') || document.getElementById('employee_id').value;
-                window.location.href = `../accounts/form.html?employee_id=${employeeId}`;
-            });
-            
-            document.getElementById('add-banking-btn').addEventListener('click', function() {
-                const employeeId = this.getAttribute('data-id') || document.getElementById('employee_id').value;
-                window.location.href = `../banking/form.html?employee_id=${employeeId}`;
-            });
-            
-            document.getElementById('create-new-btn').addEventListener('click', async () => {
-                // Reset form
-                document.getElementById('employeeForm').reset();
-                
-                // Hide success modal
-                document.getElementById('success-modal').classList.remove('show');
-                
-                // Generate new employee ID
-                try {
-                    generatedId = await generateEmployeeId();
-                    document.getElementById('employee_id').value = generatedId;
-                    
-                    // Re-enable submit button
-                    const submitBtn = document.getElementById('submit-btn');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-save btn-icon"></i> Add Employee';
-                } catch (error) {
-                    console.error('Error generating new employee ID:', error);
-                    document.getElementById('employee_id').value = 'Error generating ID';
-                }
-            });
-            
-            // Toggle sidebar
-            const menuToggle = document.getElementById('menu-toggle');
-            const sidebar = document.getElementById('sidebar');
-            
-            menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('show');
-                document.body.classList.toggle('sidebar-collapsed');
-            });
-            
-            // Handle logout
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                if (confirm('Are you sure you want to log out?')) {
-                    try {
-                        await logout();
-                        window.location.href = '../../pages/login.html';
-                    } catch (error) {
-                        console.error('Logout error:', error);
-                        showNotification('error', 'Logout Failed', 'Failed to logout');
-                    }
-                }
-            });
-        });
-    </script>
+    <!-- Scripts -->
+    <script type="module" src="../../assets/js/pages/employees/form.js"></script>
 </body>
 </html>

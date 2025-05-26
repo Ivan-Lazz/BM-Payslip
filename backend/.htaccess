@@ -1,6 +1,6 @@
 # Enable rewriting engine
 RewriteEngine On
-RewriteBase /testPayRoll/
+RewriteBase /bm-payslip/backend/
 
 # Ensure CORS headers work
 <IfModule mod_headers.c>
@@ -27,7 +27,7 @@ RewriteRule ^api/(.*)$ index.php [QSA,L]
 # Allow direct access to the frontend
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^testPayRollFront/(.*)$ testPayRollFront/$1 [QSA,L]
+RewriteRule ^frontend/(.*)$ frontend/$1 [QSA,L]
 
 # Deny access to files starting with a dot
 <FilesMatch "^\.">
@@ -55,3 +55,4 @@ php_value max_execution_time 30
 php_value memory_limit 128M
 php_value post_max_size 8M
 php_value upload_max_filesize 2M
+

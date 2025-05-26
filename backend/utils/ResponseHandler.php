@@ -13,8 +13,16 @@ class ResponseHandler {
      * @param array $additionalFields Optional additional fields to include
      */
     public static function json($statusCode, $success, $message, $data = null, $additionalFields = []) {
+        // Ensure no output has been sent
+        if (headers_sent()) {
+            error_log('Headers already sent in ResponseHandler::json');
+            return;
+        }
+        
+        // Set status code
         http_response_code($statusCode);
         
+        // Prepare response
         $response = [
             'status_code' => $statusCode,
             'success' => $success,
@@ -29,8 +37,11 @@ class ResponseHandler {
             $response = array_merge($response, $additionalFields);
         }
         
-        header('Content-Type: application/json');
-        echo json_encode($response);
+        // Set headers
+        header('Content-Type: application/json; charset=utf-8');
+        
+        // Output JSON
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
     
@@ -81,6 +92,13 @@ class ResponseHandler {
      * Send a server error response
      */
     public static function serverError($message = 'Internal server error') {
+        self::json(500, false, $message);
+    }
+    
+    /**
+     * Send an error response
+     */
+    public static function error($message) {
         self::json(500, false, $message);
     }
     

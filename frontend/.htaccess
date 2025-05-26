@@ -1,0 +1,93 @@
+# Frontend Directory Access Configuration
+# Place this file at: /frontend/.htaccess
+
+# Allow access to all frontend files
+Order Allow,Deny
+Allow from all
+
+# Enable mod_rewrite
+RewriteEngine On
+RewriteBase /bm-payslip/frontend/
+
+# MIME type configuration
+<IfModule mod_mime.c>
+    AddType application/pdf .pdf
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/gif .gif
+    AddType image/x-icon .ico
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+    AddType text/html .html .htm
+</IfModule>
+
+# PDF-specific headers for proper viewing
+<FilesMatch "\.pdf$">
+    <IfModule mod_headers.c>
+        Header always set Content-Type "application/pdf"
+        Header always set Content-Disposition "inline"
+        Header always set Cache-Control "private, max-age=3600"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-Frame-Options "SAMEORIGIN"
+    </IfModule>
+</FilesMatch>
+
+# Image file headers
+<FilesMatch "\.(png|jpg|jpeg|gif|ico)$">
+    <IfModule mod_headers.c>
+        Header always set Cache-Control "public, max-age=31536000"
+        Header always set X-Content-Type-Options "nosniff"
+    </IfModule>
+</FilesMatch>
+
+# CSS and JS file headers
+<FilesMatch "\.(css|js)$">
+    <IfModule mod_headers.c>
+        Header always set Cache-Control "public, max-age=86400"
+        Header always set X-Content-Type-Options "nosniff"
+    </IfModule>
+</FilesMatch>
+
+# Security headers for static files
+<IfModule mod_headers.c>
+    # General security headers
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Frame options - allow same origin for PDFs, deny for others
+    <FilesMatch "\.pdf$">
+        Header always set X-Frame-Options "SAMEORIGIN"
+    </FilesMatch>
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|html)$">
+        Header always set X-Frame-Options "DENY"
+    </FilesMatch>
+</IfModule>
+
+# Enable compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Prevent access to sensitive files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Enable expires headers for caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType application/pdf "access plus 1 hour"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType text/css "access plus 1 day"
+    ExpiresByType application/javascript "access plus 1 day"
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>

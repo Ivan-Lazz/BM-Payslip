@@ -37,92 +37,136 @@ class Account {
      * @return PDOStatement Query result
      */
     public function readPaginated($search = '', $type = '') {
-        $offset = ($this->page - 1) * $this->records_per_page;
-        
-        $whereConditions = [];
-        $bindParams = [];
-        
-        if (!empty($search)) {
-            $whereConditions[] = "(a.account_id LIKE :search 
-                                  OR a.account_email LIKE :search 
-                                  OR a.employee_id LIKE :search
-                                  OR e.firstname LIKE :search
-                                  OR e.lastname LIKE :search)";
-            $bindParams[':search'] = "%{$search}%";
+        try {
+            // Get sort parameters from request - same as Employee model
+            $sortField = isset($_GET['sort_field']) ? $_GET['sort_field'] : 'account_id';
+            $sortDirection = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'ASC';
+            
+            // Validate sort field
+            $allowedFields = ['account_id', 'employee_id', 'account_email', 'account_type', 'account_status', 'created_at', 'firstname', 'lastname'];
+            if (!in_array($sortField, $allowedFields)) {
+                $sortField = 'account_id';
+            }
+            
+            // Validate sort direction
+            if (!in_array($sortDirection, ['ASC', 'DESC'])) {
+                $sortDirection = 'ASC';
+            }
+            
+            // Handle sort field with proper table prefix
+            $sortFieldWithPrefix = $sortField;
+            if (in_array($sortField, ['firstname', 'lastname'])) {
+                $sortFieldWithPrefix = 'e.' . $sortField;
+            } elseif (in_array($sortField, ['account_id', 'employee_id', 'account_email', 'account_type', 'account_status', 'created_at'])) {
+                $sortFieldWithPrefix = 'a.' . $sortField;
+            }
+            
+            $offset = ($this->page - 1) * $this->records_per_page;
+            
+            // Build WHERE clause
+            $whereConditions = [];
+            $bindParams = [];
+            
+            if (!empty($search)) {
+                $whereConditions[] = "(a.account_id LIKE :search1 
+                                    OR a.account_email LIKE :search2 
+                                    OR a.employee_id LIKE :search3
+                                    OR e.firstname LIKE :search4
+                                    OR e.lastname LIKE :search5)";
+                $bindParams[':search1'] = "%{$search}%";
+                $bindParams[':search2'] = "%{$search}%";
+                $bindParams[':search3'] = "%{$search}%";
+                $bindParams[':search4'] = "%{$search}%";
+                $bindParams[':search5'] = "%{$search}%";
+            }
+            
+            if (!empty($type)) {
+                $whereConditions[] = "a.account_type = :type";
+                $bindParams[':type'] = $type;
+            }
+            
+            $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+            
+            $query = "SELECT a.account_id, a.employee_id, a.account_email, a.account_type, a.account_status, 
+                            a.created_at, a.updated_at, 
+                            e.firstname, e.lastname
+                    FROM " . $this->table_name . " a
+                    LEFT JOIN employees e ON a.employee_id = e.employee_id 
+                    {$whereClause} 
+                    ORDER BY $sortFieldWithPrefix $sortDirection 
+                    LIMIT :offset, :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            foreach ($bindParams as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $this->records_per_page, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Error in Account::readPaginated: " . $e->getMessage());
+            throw new Exception("Error reading accounts: " . $e->getMessage());
         }
-        
-        if (!empty($type)) {
-            $whereConditions[] = "a.account_type = :type";
-            $bindParams[':type'] = $type;
-        }
-        
-        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
-        
-        $query = "SELECT a.account_id, a.employee_id, a.account_email, a.account_type, a.account_status, 
-                        a.created_at, a.updated_at, 
-                        e.firstname, e.lastname
-                 FROM " . $this->table_name . " a
-                 LEFT JOIN employees e ON a.employee_id = e.employee_id 
-                 {$whereClause} 
-                 ORDER BY a.account_id ASC 
-                 LIMIT :offset, :limit";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        foreach ($bindParams as $param => $value) {
-            $stmt->bindParam($param, $value);
-        }
-        
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        $stmt->bindParam(':limit', $this->records_per_page, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        
-        return $stmt;
     }
     
     /**
-     * Count total accounts
+     * Count total accounts with search and type filter
      *
      * @param string $search Search term (optional)
      * @param string $type Account type filter (optional)
      * @return int Total number of accounts
      */
     public function countAll($search = '', $type = '') {
-        $whereConditions = [];
-        $bindParams = [];
-        
-        if (!empty($search)) {
-            $whereConditions[] = "(a.account_id LIKE :search 
-                                  OR a.account_email LIKE :search 
-                                  OR a.employee_id LIKE :search
-                                  OR e.firstname LIKE :search
-                                  OR e.lastname LIKE :search)";
-            $bindParams[':search'] = "%{$search}%";
+        try {
+            // Build WHERE clause
+            $whereConditions = [];
+            $bindParams = [];
+            
+            if (!empty($search)) {
+                $whereConditions[] = "(a.account_id LIKE :search1 
+                                    OR a.account_email LIKE :search2 
+                                    OR a.employee_id LIKE :search3
+                                    OR e.firstname LIKE :search4
+                                    OR e.lastname LIKE :search5)";
+                $bindParams[':search1'] = "%{$search}%";
+                $bindParams[':search2'] = "%{$search}%";
+                $bindParams[':search3'] = "%{$search}%";
+                $bindParams[':search4'] = "%{$search}%";
+                $bindParams[':search5'] = "%{$search}%";
+            }
+            
+            if (!empty($type)) {
+                $whereConditions[] = "a.account_type = :type";
+                $bindParams[':type'] = $type;
+            }
+            
+            $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+            
+            $query = "SELECT COUNT(*) as total 
+                    FROM " . $this->table_name . " a
+                    LEFT JOIN employees e ON a.employee_id = e.employee_id 
+                    {$whereClause}";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            foreach ($bindParams as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return (int)$row['total'];
+        } catch (PDOException $e) {
+            error_log("Error in Account::countAll: " . $e->getMessage());
+            throw new Exception("Error counting accounts: " . $e->getMessage());
         }
-        
-        if (!empty($type)) {
-            $whereConditions[] = "a.account_type = :type";
-            $bindParams[':type'] = $type;
-        }
-        
-        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
-        
-        $query = "SELECT COUNT(*) as total 
-                 FROM " . $this->table_name . " a
-                 LEFT JOIN employees e ON a.employee_id = e.employee_id 
-                 {$whereClause}";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        foreach ($bindParams as $param => $value) {
-            $stmt->bindParam($param, $value);
-        }
-        
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return (int)$row['total'];
     }
     
     /**
@@ -256,14 +300,25 @@ class Account {
      * @return bool Whether operation was successful
      */
     public function delete() {
-        $query = "DELETE FROM " . $this->table_name . " WHERE account_id = :account_id";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        $this->account_id = htmlspecialchars(strip_tags($this->account_id));
-        $stmt->bindParam(':account_id', $this->account_id);
-        
-        return $stmt->execute();
+        try {
+            error_log("Account::delete called for ID: " . $this->account_id);
+            
+            $query = "DELETE FROM " . $this->table_name . " WHERE account_id = :account_id";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            $this->account_id = htmlspecialchars(strip_tags($this->account_id));
+            $stmt->bindParam(':account_id', $this->account_id);
+            
+            $result = $stmt->execute();
+            error_log("Delete query result: " . ($result ? 'true' : 'false'));
+            error_log("Rows affected: " . $stmt->rowCount());
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("PDO Exception in Account::delete: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**

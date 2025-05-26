@@ -29,47 +29,116 @@ class Banking {
     }
     
     /**
+     * Get banking details by employee ID - FIXED to avoid duplicates
+     *
+     * @param string $employeeId Employee ID
+     * @return PDOStatement Query result
+     */
+    public function readByEmployeeId($employeeId) {
+        try {
+            // Use DISTINCT to prevent duplicates and simple query without joins
+            $query = "SELECT DISTINCT id, employee_id, preferred_bank, bank_account_number, bank_account_name, 
+                            created_at, updated_at
+                     FROM " . $this->table_name . " 
+                     WHERE employee_id = :employee_id
+                     ORDER BY id ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!$stmt) {
+                throw new Exception("Failed to prepare statement: " . implode(', ', $this->conn->errorInfo()));
+            }
+            
+            $stmt->bindParam(':employee_id', $employeeId, PDO::PARAM_STR);
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to execute statement: " . implode(', ', $stmt->errorInfo()));
+            }
+            
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new Exception("Database error in readByEmployeeId: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Get all banking details with pagination
      *
      * @param string $search Search term (optional)
      * @return PDOStatement Query result
      */
     public function readPaginated($search = '') {
-        $offset = ($this->page - 1) * $this->records_per_page;
-        
-        $whereClause = '';
-        if (!empty($search)) {
-            $whereClause = "WHERE b.id LIKE :search 
-                           OR b.employee_id LIKE :search 
-                           OR b.preferred_bank LIKE :search
-                           OR b.bank_account_number LIKE :search
-                           OR b.bank_account_name LIKE :search
-                           OR e.firstname LIKE :search
-                           OR e.lastname LIKE :search";
+        try {
+            // Get sort parameters from request
+            $sortField = isset($_GET['sort_field']) ? $_GET['sort_field'] : 'id';
+            $sortDirection = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'ASC';
+            
+            // Validate sort field
+            $allowedFields = ['id', 'employee_id', 'preferred_bank', 'bank_account_number', 'bank_account_name', 'created_at', 'firstname', 'lastname'];
+            if (!in_array($sortField, $allowedFields)) {
+                $sortField = 'id';
+            }
+            
+            // Validate sort direction
+            if (!in_array($sortDirection, ['ASC', 'DESC'])) {
+                $sortDirection = 'ASC';
+            }
+            
+            // Handle sort field with proper table prefix
+            $sortFieldWithPrefix = $sortField;
+            if (in_array($sortField, ['firstname', 'lastname'])) {
+                $sortFieldWithPrefix = 'e.' . $sortField;
+            } elseif (in_array($sortField, ['id', 'employee_id', 'preferred_bank', 'bank_account_number', 'bank_account_name', 'created_at'])) {
+                $sortFieldWithPrefix = 'b.' . $sortField;
+            }
+            
+            $offset = ($this->page - 1) * $this->records_per_page;
+            
+            // Build WHERE clause and parameters
+            $whereClause = '';
+            $bindParams = [];
+            
+            if (!empty($search)) {
+                $whereClause = "WHERE (b.id LIKE :search1 
+                               OR b.employee_id LIKE :search2 
+                               OR b.preferred_bank LIKE :search3
+                               OR b.bank_account_number LIKE :search4
+                               OR b.bank_account_name LIKE :search5
+                               OR e.firstname LIKE :search6
+                               OR e.lastname LIKE :search7)";
+                $bindParams[':search1'] = "%{$search}%";
+                $bindParams[':search2'] = "%{$search}%";
+                $bindParams[':search3'] = "%{$search}%";
+                $bindParams[':search4'] = "%{$search}%";
+                $bindParams[':search5'] = "%{$search}%";
+                $bindParams[':search6'] = "%{$search}%";
+                $bindParams[':search7'] = "%{$search}%";
+            }
+            
+            $query = "SELECT b.id, b.employee_id, b.preferred_bank, b.bank_account_number, b.bank_account_name, 
+                            b.created_at, b.updated_at,
+                            e.firstname, e.lastname
+                     FROM " . $this->table_name . " b
+                     LEFT JOIN employees e ON b.employee_id = e.employee_id
+                     {$whereClause} 
+                     ORDER BY $sortFieldWithPrefix $sortDirection 
+                     LIMIT :offset, :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            foreach ($bindParams as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $this->records_per_page, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new Exception("Error reading banking details: " . $e->getMessage());
         }
-        
-        $query = "SELECT b.id, b.employee_id, b.preferred_bank, b.bank_account_number, b.bank_account_name, 
-                        b.created_at, b.updated_at,
-                        e.firstname, e.lastname
-                 FROM " . $this->table_name . " b
-                 LEFT JOIN employees e ON b.employee_id = e.employee_id
-                 {$whereClause} 
-                 ORDER BY b.id ASC 
-                 LIMIT :offset, :limit";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        if (!empty($search)) {
-            $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
-        }
-        
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        $stmt->bindParam(':limit', $this->records_per_page, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        
-        return $stmt;
     }
     
     /**
@@ -79,33 +148,47 @@ class Banking {
      * @return int Total number of banking details
      */
     public function countAll($search = '') {
-        $whereClause = '';
-        if (!empty($search)) {
-            $whereClause = "WHERE b.id LIKE :search 
-                           OR b.employee_id LIKE :search 
-                           OR b.preferred_bank LIKE :search
-                           OR b.bank_account_number LIKE :search
-                           OR b.bank_account_name LIKE :search
-                           OR e.firstname LIKE :search
-                           OR e.lastname LIKE :search";
+        try {
+            // Build WHERE clause and parameters
+            $whereClause = '';
+            $bindParams = [];
+            
+            if (!empty($search)) {
+                $whereClause = "WHERE (b.id LIKE :search1 
+                               OR b.employee_id LIKE :search2 
+                               OR b.preferred_bank LIKE :search3
+                               OR b.bank_account_number LIKE :search4
+                               OR b.bank_account_name LIKE :search5
+                               OR e.firstname LIKE :search6
+                               OR e.lastname LIKE :search7)";
+                $bindParams[':search1'] = "%{$search}%";
+                $bindParams[':search2'] = "%{$search}%";
+                $bindParams[':search3'] = "%{$search}%";
+                $bindParams[':search4'] = "%{$search}%";
+                $bindParams[':search5'] = "%{$search}%";
+                $bindParams[':search6'] = "%{$search}%";
+                $bindParams[':search7'] = "%{$search}%";
+            }
+            
+            $query = "SELECT COUNT(DISTINCT b.id) as total 
+                     FROM " . $this->table_name . " b
+                     LEFT JOIN employees e ON b.employee_id = e.employee_id
+                     {$whereClause}";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind parameters
+            foreach ($bindParams as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return (int)$row['total'];
+        } catch (PDOException $e) {
+            throw new Exception("Error counting banking details: " . $e->getMessage());
         }
-        
-        $query = "SELECT COUNT(*) as total 
-                 FROM " . $this->table_name . " b
-                 LEFT JOIN employees e ON b.employee_id = e.employee_id
-                 {$whereClause}";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        if (!empty($search)) {
-            $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
-        }
-        
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return (int)$row['total'];
     }
     
     /**
@@ -125,26 +208,6 @@ class Banking {
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
-        $stmt->execute();
-        
-        return $stmt;
-    }
-    
-    /**
-     * Get banking details by employee ID
-     *
-     * @param string $employeeId Employee ID
-     * @return PDOStatement Query result
-     */
-    public function readByEmployeeId($employeeId) {
-        $query = "SELECT id, employee_id, preferred_bank, bank_account_number, bank_account_name, 
-                        created_at, updated_at
-                 FROM " . $this->table_name . " 
-                 WHERE employee_id = :employee_id
-                 ORDER BY id ASC";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employeeId);
         $stmt->execute();
         
         return $stmt;

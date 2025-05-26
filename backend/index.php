@@ -30,21 +30,26 @@ $requestUri = $_SERVER['REQUEST_URI'];
 
 // Parse URL path
 $path = parse_url($requestUri, PHP_URL_PATH);
-$path = str_replace('/testPayRoll/api/', '', $path);
-$pathSegments = explode('/', $path);
+$path = str_replace('/bm-payslip/backend/api/', '', $path);
+$pathSegments = array_filter(explode('/', $path)); // Remove empty segments
 
 // Default values
 $resource = $pathSegments[0] ?? null;
 $id = $pathSegments[1] ?? null;
 $subResource = $pathSegments[2] ?? null;
 
+// Additional parameter for deeper nesting (e.g., /banking/employee/{employee_id})
+$subResourceId = $pathSegments[3] ?? null;
+
 // Log the request (in development mode)
 if (defined('APP_ENV') && APP_ENV === 'development') {
     error_log("API Request: " . $requestMethod . " " . $path);
+    error_log("Path segments: " . print_r($pathSegments, true));
+    error_log("Resource: $resource, ID: $id, SubResource: $subResource, SubResourceId: $subResourceId");
 }
 
 // Router function
-function routeRequest($resource, $id, $subResource, $method) {
+function routeRequest($resource, $id, $subResource, $subResourceId, $method) {
     // Initialize database connection
     $db = (new Database())->getConnection();
     
@@ -80,6 +85,12 @@ function routeRequest($resource, $id, $subResource, $method) {
             $controller = new AuthController($db);
             break;
             
+        case 'pdfs':
+            // NEW: Handle PDF downloads
+            require_once __DIR__ . '/controllers/PDFController.php';
+            $controller = new PDFController($db);
+            break;
+            
         case 'install':
             // Special case for installation
             require_once __DIR__ . '/install/InstallController.php';
@@ -89,17 +100,33 @@ function routeRequest($resource, $id, $subResource, $method) {
         default:
             // Resource not found
             ResponseHandler::notFound('Endpoint not found');
-            break;
+            return;
     }
     
-    // Call the controller's handleRequest method
-    $controller->handleRequest($method, $id, $subResource);
+    // Handle special cases for nested resources
+    if ($resource === 'banking' && $id === 'employee' && $subResource) {
+        // Handle /banking/employee/{employee_id}
+        $controller->handleRequest($method, $id, $subResource);
+    } elseif ($resource === 'employees' && $id && $subResource) {
+        // Handle /employees/{id}/{subresource}
+        $controller->handleRequest($method, $id, $subResource);
+    } elseif ($resource === 'payslips' && $id && $subResource) {
+        // Handle /payslips/{id}/{subresource}
+        $controller->handleRequest($method, $id, $subResource);
+    } elseif ($resource === 'pdfs') {
+        // Handle PDF downloads: /pdfs/{filename}/{type}
+        // Example: /pdfs/agent_000000001_20250525_021127.pdf/agent
+        $controller->handleRequest($method, $id, $subResource);
+    } else {
+        // Call the controller's handleRequest method with standard parameters
+        $controller->handleRequest($method, $id, $subResource);
+    }
 }
 
 // Main execution
 try {
     // Route the request
-    routeRequest($resource, $id, $subResource, $requestMethod);
+    routeRequest($resource, $id, $subResource, $subResourceId, $requestMethod);
 } catch (Exception $e) {
     // Log the error
     $logDir = __DIR__ . '/logs';

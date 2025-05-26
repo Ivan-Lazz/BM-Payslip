@@ -1,0 +1,87 @@
+Create a Pay Slip Generator System which has the following features: 
+-Able to connect and communicate with the provided backend API. 
+-Able to generate two different PDF files for the pay slip, the content of each file will 
+be included at this file. 
+-Perform CRUD operations with the help of an API. 
+-Data should be displayed per page to prevent too much scrolling. 
+-On the pay slip generation page, the display should be split type wherein the input 
+fields/controls are on the left side and the data/output should be on the right side. 
+-Should be implemented with a simple modern design. 
+-Make the backend and frontend as simple as possible. 
+-Automatically create the database and its corresponding tables. 
+
+The input fields for the frontend UI are the following: 
+Add New Users Page: 
+First Name 
+Last Name 
+Email 
+Username 
+Password 
+=============================================== 
+Add New Employees Page: 
+Employee ID (Auto-fill based on the last ID on the database) 
+First Name 
+Last Name 
+Contact Number 
+Email Address 
+================================================ 
+Add New Employee Account: 
+Employee ID  
+First Name (Auto-fill) 
+Last Name (Auto-fill) 
+Account Email 
+Account Password 
+Account Type (Options: Team Leader, Overflow, Auto-Warranty, Commissions) 
+Account Status 
+================================================= 
+Add Employee Banking Details: 
+Employee ID
+Employee Name (Auto filled based on Employee ID and not to be passed into the 
+database/API) 
+Preferred Bank 
+Bank Account 
+Bank Details/Bank Holder 
+================================================== 
+Payment/Payslip: 
+Agent Name (Auto filled based on Employee ID and not to be passed into the 
+database/API) 
+Employee Id 
+Bank Account (Has a select option if more than one bank account is present on the 
+employee id) 
+Bank Details/Bank Holder (Autofill base on bank account) 
+Person In Charge (Autofill Based on who is logged in) 
+Date (Autofill Base on creation) 
+Salary 
+Bonus 
+Total Salary (Autofilled based on Salary and Bonus) 
+Status (Option: Paid, Pending, Cancelled) 
+Here are the contents for the Pay Slip PDF, both of these files should be extracted 
+upon generation 
+Agent Payslip (Variation 1) 
+Name of Company + Logo 
+Agent Name 
+Employee Id 
+Date 
+Salary 
+Bonus 
+Total Salary 
+Admin Payslip (Variation 2) 
+Name of Company + Logo 
+Agent Name 
+Employee Id 
+Bank Details (Acc ID/Number & Acct Holder) 
+Person In Charge 
+Date 
+Salary 
+Bonus 
+Total Salary 
+
+
+Notes: 
+• The project as two parts, the frontend and the backend. 
+• This will be deployed locally through XAMPP and host computer. 
+• The UI design should have the primary color of #ff8c00, but don’t make it too 
+dominant on the pages. 
+• It should be able to create an initial user account when the database has no 
+content (There is no need to display the initial account credentials, just include 
+it in a manual for the project). 

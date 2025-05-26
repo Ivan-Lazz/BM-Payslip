@@ -3,7 +3,14 @@ require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Payslip.php';
 require_once __DIR__ . '/../models/Employee.php';
 require_once __DIR__ . '/../models/Banking.php';
-require_once __DIR__ . '/../services/PDFGenerator.php';
+
+// Check if PDFGenerator exists before requiring
+$pdfGeneratorPath = __DIR__ . '/../services/PDFGenerator.php';
+if (file_exists($pdfGeneratorPath)) {
+    require_once $pdfGeneratorPath;
+} else {
+    error_log("PDFGenerator.php not found at: " . $pdfGeneratorPath);
+}
 
 /**
  * PayslipController - Handles payslip-related API endpoints
@@ -69,6 +76,7 @@ class PayslipController extends BaseController {
             // Return paginated response
             ResponseHandler::paginated($payslips, $page, $perPage, $totalRecords);
         } catch (Exception $e) {
+            error_log("Error in getAll payslips: " . $e->getMessage());
             ResponseHandler::serverError('Error retrieving payslips: ' . $e->getMessage());
         }
     }
@@ -106,6 +114,7 @@ class PayslipController extends BaseController {
                 ResponseHandler::notFound('Payslip not found');
             }
         } catch (Exception $e) {
+            error_log("Error in getOne payslip: " . $e->getMessage());
             ResponseHandler::serverError('Error retrieving payslip: ' . $e->getMessage());
         }
     }
@@ -118,18 +127,9 @@ class PayslipController extends BaseController {
             // Get posted data
             $data = $this->getJsonInput();
             
-            // Set validator and validate input
-            $this->validator->setData($data);
-            $this->validator
-                ->required(['employee_id', 'bank_account_id', 'salary', 'bonus', 'person_in_charge', 'cutoff_date', 'payment_date', 'payment_status'])
-                ->numeric('salary')
-                ->numeric('bonus')
-                ->date('cutoff_date')
-                ->date('payment_date');
-            
-            if (!$this->validator->isValid()) {
-                ResponseHandler::badRequest('Invalid input data', $this->validator->getErrors());
-                return;
+            // Validate input data
+            if (!$this->validatePayslipData($data)) {
+                return; // Error response already sent
             }
             
             // Check if employee exists
@@ -146,13 +146,14 @@ class PayslipController extends BaseController {
                 ResponseHandler::badRequest('Banking detail not found');
                 return;
             }
+            $banking = $bankingStmt->fetch(PDO::FETCH_ASSOC);
             
             // Set payslip properties
             $this->payslipModel->employee_id = $data['employee_id'];
             $this->payslipModel->bank_account_id = $data['bank_account_id'];
-            $this->payslipModel->salary = $data['salary'];
-            $this->payslipModel->bonus = $data['bonus'];
-            $this->payslipModel->total_salary = $data['salary'] + $data['bonus'];
+            $this->payslipModel->salary = floatval($data['salary']);
+            $this->payslipModel->bonus = floatval($data['bonus']);
+            $this->payslipModel->total_salary = $this->payslipModel->salary + $this->payslipModel->bonus;
             $this->payslipModel->person_in_charge = $data['person_in_charge'];
             $this->payslipModel->cutoff_date = $data['cutoff_date'];
             $this->payslipModel->payment_date = $data['payment_date'];
@@ -161,74 +162,113 @@ class PayslipController extends BaseController {
             // Generate payslip number
             $this->payslipModel->payslip_no = $this->payslipModel->generatePayslipNo();
             
-            // Create the payslip
-            if ($this->payslipModel->create()) {
-                // Get employee and banking details for PDF generation
-                $employeeStmt = $employeeModel->readOne($data['employee_id']);
-                $employee = $employeeStmt->fetch(PDO::FETCH_ASSOC);
-                
-                $banking = $bankingStmt->fetch(PDO::FETCH_ASSOC);
-                
-                // Prepare data for PDF generation
-                $pdfData = [
-                    'payslip_no' => $this->payslipModel->payslip_no,
-                    'employee_id' => $this->payslipModel->employee_id,
-                    'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
-                    'bank_details' => [
-                        'preferred_bank' => $banking['preferred_bank'],
-                        'bank_account_number' => $banking['bank_account_number'],
-                        'bank_account_name' => $banking['bank_account_name']
-                    ],
-                    'salary' => $this->payslipModel->salary,
-                    'bonus' => $this->payslipModel->bonus,
-                    'total_salary' => $this->payslipModel->total_salary,
-                    'person_in_charge' => $this->payslipModel->person_in_charge,
-                    'cutoff_date' => $this->payslipModel->cutoff_date,
-                    'payment_date' => $this->payslipModel->payment_date,
-                    'payment_status' => $this->payslipModel->payment_status
-                ];
-                
-                // Generate PDFs
-                $pdfGenerator = new PDFGenerator();
-                $agentPdfPath = $pdfGenerator->generateAgentPayslip($pdfData);
-                $adminPdfPath = $pdfGenerator->generateAdminPayslip($pdfData);
-                
-                // Update payslip with PDF paths
-                $this->payslipModel->id = $this->payslipModel->id;
-                $this->payslipModel->agent_pdf_path = $agentPdfPath['path'];
-                $this->payslipModel->admin_pdf_path = $adminPdfPath['path'];
-                $this->payslipModel->updatePDFPaths();
-                
-                // Prepare response data
-                $payslip = [
-                    'id' => $this->payslipModel->id,
-                    'payslip_no' => $this->payslipModel->payslip_no,
-                    'employee_id' => $this->payslipModel->employee_id,
-                    'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
-                    'bank_account_id' => $this->payslipModel->bank_account_id,
-                    'bank_details' => [
-                        'preferred_bank' => $banking['preferred_bank'],
-                        'bank_account_number' => $banking['bank_account_number'],
-                        'bank_account_name' => $banking['bank_account_name']
-                    ],
-                    'salary' => $this->payslipModel->salary,
-                    'bonus' => $this->payslipModel->bonus,
-                    'total_salary' => $this->payslipModel->total_salary,
-                    'person_in_charge' => $this->payslipModel->person_in_charge,
-                    'cutoff_date' => $this->payslipModel->cutoff_date,
-                    'payment_date' => $this->payslipModel->payment_date,
-                    'payment_status' => $this->payslipModel->payment_status,
-                    'agent_pdf_path' => $this->payslipModel->agent_pdf_path,
-                    'admin_pdf_path' => $this->payslipModel->admin_pdf_path
-                ];
-                
-                ResponseHandler::created('Payslip created successfully', $payslip);
-            } else {
+            // Create the payslip first (without PDF paths)
+            if (!$this->payslipModel->create()) {
                 ResponseHandler::serverError('Failed to create payslip');
+                return;
             }
+            
+            // Get employee details for PDF
+            $employeeStmt = $employeeModel->readOne($data['employee_id']);
+            $employee = $employeeStmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Prepare data for PDF generation
+            $pdfData = [
+                'payslip_no' => $this->payslipModel->payslip_no,
+                'employee_id' => $this->payslipModel->employee_id,
+                'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
+                'bank_details' => [
+                    'preferred_bank' => $banking['preferred_bank'],
+                    'bank_account_number' => $banking['bank_account_number'],
+                    'bank_account_name' => $banking['bank_account_name']
+                ],
+                'salary' => $this->payslipModel->salary,
+                'bonus' => $this->payslipModel->bonus,
+                'total_salary' => $this->payslipModel->total_salary,
+                'person_in_charge' => $this->payslipModel->person_in_charge,
+                'cutoff_date' => $this->payslipModel->cutoff_date,
+                'payment_date' => $this->payslipModel->payment_date,
+                'payment_status' => $this->payslipModel->payment_status
+            ];
+            
+            // Try to generate PDFs
+            $agentPdfPath = null;
+            $adminPdfPath = null;
+            
+            try {
+                if (class_exists('PDFGenerator')) {
+                    $pdfGenerator = new PDFGenerator();
+                    
+                    // Generate PDFs
+                    $agentPdfResult = $pdfGenerator->generateAgentPayslip($pdfData);
+                    $adminPdfResult = $pdfGenerator->generateAdminPayslip($pdfData);
+                    
+                    $agentPdfPath = $agentPdfResult['path'];
+                    $adminPdfPath = $adminPdfResult['path'];
+                    
+                    // Update payslip with PDF paths
+                    $this->payslipModel->agent_pdf_path = $agentPdfPath;
+                    $this->payslipModel->admin_pdf_path = $adminPdfPath;
+                    $this->payslipModel->updatePDFPaths();
+                } else {
+                    error_log("PDFGenerator class not available");
+                }
+            } catch (Exception $pdfError) {
+                error_log("PDF Generation Error: " . $pdfError->getMessage());
+                // Continue without PDFs - payslip is still created
+            }
+            
+            // Prepare response data
+            $payslip = [
+                'id' => $this->payslipModel->id,
+                'payslip_no' => $this->payslipModel->payslip_no,
+                'employee_id' => $this->payslipModel->employee_id,
+                'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
+                'bank_account_id' => $this->payslipModel->bank_account_id,
+                'bank_details' => [
+                    'preferred_bank' => $banking['preferred_bank'],
+                    'bank_account_number' => $banking['bank_account_number'],
+                    'bank_account_name' => $banking['bank_account_name']
+                ],
+                'salary' => $this->payslipModel->salary,
+                'bonus' => $this->payslipModel->bonus,
+                'total_salary' => $this->payslipModel->total_salary,
+                'person_in_charge' => $this->payslipModel->person_in_charge,
+                'cutoff_date' => $this->payslipModel->cutoff_date,
+                'payment_date' => $this->payslipModel->payment_date,
+                'payment_status' => $this->payslipModel->payment_status,
+                'agent_pdf_path' => $agentPdfPath,
+                'admin_pdf_path' => $adminPdfPath
+            ];
+            
+            ResponseHandler::created('Payslip created successfully', $payslip);
+            
         } catch (Exception $e) {
-            ResponseHandler::serverError('Error creating payslip: ' . $e->getMessage());
+            error_log("Error in create payslip: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            ResponseHandler::serverError('Error creating payslip');
         }
+    }
+    
+    /**
+     * Validate payslip data
+     */
+    private function validatePayslipData($data) {
+        // Set validator and validate input
+        $this->validator->setData($data);
+        $this->validator
+            ->required(['employee_id', 'bank_account_id', 'salary', 'person_in_charge', 'cutoff_date', 'payment_date', 'payment_status'])
+            ->numeric('salary')
+            ->numeric('bonus')
+            ->date('cutoff_date')
+            ->date('payment_date');
+        
+        if (!$this->validator->isValid()) {
+            ResponseHandler::badRequest('Invalid input data', $this->validator->getErrors());
+            return false;
+        }
+        
+        return true;
     }
     
     /**
@@ -250,18 +290,9 @@ class PayslipController extends BaseController {
             // Get posted data
             $data = $this->getJsonInput();
             
-            // Set validator and validate input
-            $this->validator->setData($data);
-            $this->validator
-                ->required(['employee_id', 'bank_account_id', 'salary', 'bonus', 'person_in_charge', 'cutoff_date', 'payment_date', 'payment_status'])
-                ->numeric('salary')
-                ->numeric('bonus')
-                ->date('cutoff_date')
-                ->date('payment_date');
-            
-            if (!$this->validator->isValid()) {
-                ResponseHandler::badRequest('Invalid input data', $this->validator->getErrors());
-                return;
+            // Validate input data
+            if (!$this->validatePayslipData($data)) {
+                return; // Error response already sent
             }
             
             // Check if employee exists
@@ -278,86 +309,105 @@ class PayslipController extends BaseController {
                 ResponseHandler::badRequest('Banking detail not found');
                 return;
             }
+            $banking = $bankingStmt->fetch(PDO::FETCH_ASSOC);
             
             // Set payslip properties
             $this->payslipModel->id = $id;
             $this->payslipModel->employee_id = $data['employee_id'];
             $this->payslipModel->bank_account_id = $data['bank_account_id'];
-            $this->payslipModel->salary = $data['salary'];
-            $this->payslipModel->bonus = $data['bonus'];
-            $this->payslipModel->total_salary = $data['salary'] + $data['bonus'];
+            $this->payslipModel->salary = floatval($data['salary']);
+            $this->payslipModel->bonus = floatval($data['bonus']);
+            $this->payslipModel->total_salary = $this->payslipModel->salary + $this->payslipModel->bonus;
             $this->payslipModel->person_in_charge = $data['person_in_charge'];
             $this->payslipModel->cutoff_date = $data['cutoff_date'];
             $this->payslipModel->payment_date = $data['payment_date'];
             $this->payslipModel->payment_status = $data['payment_status'];
             
             // Update the payslip
-            if ($this->payslipModel->update()) {
-                // Get employee and banking details for PDF generation
-                $employeeStmt = $employeeModel->readOne($data['employee_id']);
-                $employee = $employeeStmt->fetch(PDO::FETCH_ASSOC);
-                
-                $banking = $bankingStmt->fetch(PDO::FETCH_ASSOC);
-                
-                // Prepare data for PDF generation
-                $pdfData = [
-                    'payslip_no' => $existingPayslip['payslip_no'],
-                    'employee_id' => $this->payslipModel->employee_id,
-                    'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
-                    'bank_details' => [
-                        'preferred_bank' => $banking['preferred_bank'],
-                        'bank_account_number' => $banking['bank_account_number'],
-                        'bank_account_name' => $banking['bank_account_name']
-                    ],
-                    'salary' => $this->payslipModel->salary,
-                    'bonus' => $this->payslipModel->bonus,
-                    'total_salary' => $this->payslipModel->total_salary,
-                    'person_in_charge' => $this->payslipModel->person_in_charge,
-                    'cutoff_date' => $this->payslipModel->cutoff_date,
-                    'payment_date' => $this->payslipModel->payment_date,
-                    'payment_status' => $this->payslipModel->payment_status
-                ];
-                
-                // Generate PDFs
-                $pdfGenerator = new PDFGenerator();
-                $agentPdfPath = $pdfGenerator->generateAgentPayslip($pdfData);
-                $adminPdfPath = $pdfGenerator->generateAdminPayslip($pdfData);
-                
-                // Update payslip with PDF paths
-                $this->payslipModel->id = $id;
-                $this->payslipModel->agent_pdf_path = $agentPdfPath['path'];
-                $this->payslipModel->admin_pdf_path = $adminPdfPath['path'];
-                $this->payslipModel->updatePDFPaths();
-                
-                // Prepare response data
-                $payslip = [
-                    'id' => $this->payslipModel->id,
-                    'payslip_no' => $existingPayslip['payslip_no'],
-                    'employee_id' => $this->payslipModel->employee_id,
-                    'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
-                    'bank_account_id' => $this->payslipModel->bank_account_id,
-                    'bank_details' => [
-                        'preferred_bank' => $banking['preferred_bank'],
-                        'bank_account_number' => $banking['bank_account_number'],
-                        'bank_account_name' => $banking['bank_account_name']
-                    ],
-                    'salary' => $this->payslipModel->salary,
-                    'bonus' => $this->payslipModel->bonus,
-                    'total_salary' => $this->payslipModel->total_salary,
-                    'person_in_charge' => $this->payslipModel->person_in_charge,
-                    'cutoff_date' => $this->payslipModel->cutoff_date,
-                    'payment_date' => $this->payslipModel->payment_date,
-                    'payment_status' => $this->payslipModel->payment_status,
-                    'agent_pdf_path' => $this->payslipModel->agent_pdf_path,
-                    'admin_pdf_path' => $this->payslipModel->admin_pdf_path
-                ];
-                
-                ResponseHandler::success('Payslip updated successfully', $payslip);
-            } else {
+            if (!$this->payslipModel->update()) {
                 ResponseHandler::serverError('Failed to update payslip');
+                return;
             }
+            
+            // Get employee details for PDF
+            $employeeStmt = $employeeModel->readOne($data['employee_id']);
+            $employee = $employeeStmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Prepare data for PDF generation
+            $pdfData = [
+                'payslip_no' => $existingPayslip['payslip_no'],
+                'employee_id' => $this->payslipModel->employee_id,
+                'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
+                'bank_details' => [
+                    'preferred_bank' => $banking['preferred_bank'],
+                    'bank_account_number' => $banking['bank_account_number'],
+                    'bank_account_name' => $banking['bank_account_name']
+                ],
+                'salary' => $this->payslipModel->salary,
+                'bonus' => $this->payslipModel->bonus,
+                'total_salary' => $this->payslipModel->total_salary,
+                'person_in_charge' => $this->payslipModel->person_in_charge,
+                'cutoff_date' => $this->payslipModel->cutoff_date,
+                'payment_date' => $this->payslipModel->payment_date,
+                'payment_status' => $this->payslipModel->payment_status
+            ];
+            
+            // Try to generate PDFs
+            $agentPdfPath = null;
+            $adminPdfPath = null;
+            
+            try {
+                if (class_exists('PDFGenerator')) {
+                    $pdfGenerator = new PDFGenerator();
+                    
+                    // Generate PDFs
+                    $agentPdfResult = $pdfGenerator->generateAgentPayslip($pdfData);
+                    $adminPdfResult = $pdfGenerator->generateAdminPayslip($pdfData);
+                    
+                    $agentPdfPath = $agentPdfResult['path'];
+                    $adminPdfPath = $adminPdfResult['path'];
+                    
+                    // Update payslip with PDF paths
+                    $this->payslipModel->agent_pdf_path = $agentPdfPath;
+                    $this->payslipModel->admin_pdf_path = $adminPdfPath;
+                    $this->payslipModel->updatePDFPaths();
+                } else {
+                    error_log("PDFGenerator class not available");
+                }
+            } catch (Exception $pdfError) {
+                error_log("PDF Generation Error: " . $pdfError->getMessage());
+                // Continue without PDFs - payslip is still updated
+            }
+            
+            // Prepare response data
+            $payslip = [
+                'id' => $this->payslipModel->id,
+                'payslip_no' => $existingPayslip['payslip_no'],
+                'employee_id' => $this->payslipModel->employee_id,
+                'employee_name' => $employee['firstname'] . ' ' . $employee['lastname'],
+                'bank_account_id' => $this->payslipModel->bank_account_id,
+                'bank_details' => [
+                    'preferred_bank' => $banking['preferred_bank'],
+                    'bank_account_number' => $banking['bank_account_number'],
+                    'bank_account_name' => $banking['bank_account_name']
+                ],
+                'salary' => $this->payslipModel->salary,
+                'bonus' => $this->payslipModel->bonus,
+                'total_salary' => $this->payslipModel->total_salary,
+                'person_in_charge' => $this->payslipModel->person_in_charge,
+                'cutoff_date' => $this->payslipModel->cutoff_date,
+                'payment_date' => $this->payslipModel->payment_date,
+                'payment_status' => $this->payslipModel->payment_status,
+                'agent_pdf_path' => $agentPdfPath,
+                'admin_pdf_path' => $adminPdfPath
+            ];
+            
+            ResponseHandler::success('Payslip updated successfully', $payslip);
+            
         } catch (Exception $e) {
-            ResponseHandler::serverError('Error updating payslip: ' . $e->getMessage());
+            error_log("Error in update payslip: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            ResponseHandler::serverError('Error updating payslip');
         }
     }
     
@@ -384,6 +434,7 @@ class PayslipController extends BaseController {
                 ResponseHandler::serverError('Failed to delete payslip');
             }
         } catch (Exception $e) {
+            error_log("Error in delete payslip: " . $e->getMessage());
             ResponseHandler::serverError('Error deleting payslip: ' . $e->getMessage());
         }
     }
@@ -449,24 +500,29 @@ class PayslipController extends BaseController {
             ];
             
             // Generate PDFs
-            $pdfGenerator = new PDFGenerator();
-            $agentPdfPath = $pdfGenerator->generateAgentPayslip($pdfData);
-            $adminPdfPath = $pdfGenerator->generateAdminPayslip($pdfData);
-            
-            // Update payslip with PDF paths
-            $this->payslipModel->id = $id;
-            $this->payslipModel->agent_pdf_path = $agentPdfPath['path'];
-            $this->payslipModel->admin_pdf_path = $adminPdfPath['path'];
-            
-            if ($this->payslipModel->updatePDFPaths()) {
-                ResponseHandler::success('PDFs regenerated successfully', [
-                    'agent_pdf_path' => $this->payslipModel->agent_pdf_path,
-                    'admin_pdf_path' => $this->payslipModel->admin_pdf_path
-                ]);
+            if (class_exists('PDFGenerator')) {
+                $pdfGenerator = new PDFGenerator();
+                $agentPdfPath = $pdfGenerator->generateAgentPayslip($pdfData);
+                $adminPdfPath = $pdfGenerator->generateAdminPayslip($pdfData);
+                
+                // Update payslip with PDF paths
+                $this->payslipModel->id = $id;
+                $this->payslipModel->agent_pdf_path = $agentPdfPath['path'];
+                $this->payslipModel->admin_pdf_path = $adminPdfPath['path'];
+                
+                if ($this->payslipModel->updatePDFPaths()) {
+                    ResponseHandler::success('PDFs regenerated successfully', [
+                        'agent_pdf_path' => $this->payslipModel->agent_pdf_path,
+                        'admin_pdf_path' => $this->payslipModel->admin_pdf_path
+                    ]);
+                } else {
+                    ResponseHandler::serverError('Failed to update PDF paths');
+                }
             } else {
-                ResponseHandler::serverError('Failed to update PDF paths');
+                ResponseHandler::serverError('PDF Generator not available');
             }
         } catch (Exception $e) {
+            error_log("Error regenerating PDFs: " . $e->getMessage());
             ResponseHandler::serverError('Error regenerating PDFs: ' . $e->getMessage());
         }
     }
@@ -508,6 +564,7 @@ class PayslipController extends BaseController {
             
             ResponseHandler::success('Payslips retrieved successfully', $payslips);
         } catch (Exception $e) {
+            error_log("Error retrieving payslips by employee: " . $e->getMessage());
             ResponseHandler::serverError('Error retrieving payslips: ' . $e->getMessage());
         }
     }

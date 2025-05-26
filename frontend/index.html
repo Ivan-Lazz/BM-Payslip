@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pay Slip Generator</title>
+    <title>Pay Slip Generator - BM Outsourcing</title>
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,24 +12,27 @@
 </head>
 <body>
     <div id="app">
+        <!-- Navigation -->
+        <nav class="main-nav" id="mainNav">
+            <!-- Navigation will be loaded here -->
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
         <!-- Content will be loaded here by the router -->
         <div class="loading-container">
             <div class="loading-spinner"></div>
             <p>Loading...</p>
         </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>&copy; 2024 BM Outsourcing. All rights reserved.</p>
+        </footer>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if user is authenticated
-            if (!isAuthenticated() && !window.location.pathname.includes('/login.html')) {
-                // Redirect to login page if not authenticated
-                window.location.href = 'pages/login.html';
-            } else if (isAuthenticated() && window.location.pathname === '/') {
-                // Redirect to dashboard if authenticated and at root
-                window.location.href = 'pages/dashboard.html';
-            }
-        });
-    </script>
+    <!-- Core Scripts -->
+    <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

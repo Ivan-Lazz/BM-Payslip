@@ -9,6 +9,66 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="shortcut icon" href="../../assets/img/favicon.ico" type="image/x-icon">
     <script src="../../config.js"></script>
+    <style>
+        /* Badge styles for status indicators */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .badge-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .badge-warning {
+            background-color: var(--warning-color);
+            color: var(--text-dark);
+        }
+        
+        /* Table improvements */
+        .table-actions {
+            white-space: nowrap;
+        }
+        
+        .table-actions .btn-group {
+            margin-left: 0.25rem;
+        }
+        
+        /* Loading states */
+        .loading-container {
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            margin: 0 auto 1rem;
+        }
+        
+        /* Responsive table */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+            
+            .table-actions {
+                min-width: 120px;
+            }
+            
+            .dropdown-menu {
+                right: auto;
+                left: 0;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -100,18 +160,36 @@
                     <div class="card-header">
                         <h2 class="card-title">Filters</h2>
                         <button type="button" class="btn btn-sm btn-outline" id="toggle-filters">
-                            <i class="fas fa-filter btn-icon"></i> Toggle Filters
+                            <i class="fas fa-filter btn-icon"></i> Show Filters
                         </button>
                     </div>
-                    <div class="card-body" id="filters-container" style="display: none;">
+                    <div class="card-body" id="filters-container">
                         <form id="filter-form" class="form">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="search" class="form-label">Search</label>
-                                    <input type="text" id="search" class="form-input" placeholder="Search by Employee ID, Username...">
+                                    <input type="text" id="search" class="form-input" placeholder="Search by Employee ID, Name, Email...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort_field" class="form-label">Sort By</label>
+                                    <select id="sort_field" class="form-select">
+                                        <option value="account_id">Account ID</option>
+                                        <option value="employee_id">Employee ID</option>
+                                        <option value="account_email">Email</option>
+                                        <option value="account_type">Account Type</option>
+                                        <option value="account_status">Status</option>
+                                        <option value="created_at">Date Created</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort_direction" class="form-label">Sort Direction</label>
+                                    <select id="sort_direction" class="form-select">
+                                        <option value="asc">Ascending</option>
+                                        <option value="desc">Descending</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="filter-actions">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search btn-icon"></i> Apply Filters
                                 </button>
@@ -127,19 +205,26 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table" id="accounts-table">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Employee ID</th>
-                                        <th>Name</th>
-                                        <th>Account Email</th>
-                                        <th>Account Type</th>
-                                        <th>Status</th>
+                                        <th data-sort="employee_id">Employee ID</th>
+                                        <th data-sort="firstname">Name</th>
+                                        <th data-sort="account_email">Account Email</th>
+                                        <th data-sort="account_type">Account Type</th>
+                                        <th data-sort="account_status">Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Table rows will be dynamically populated -->
+                                <tbody id="accounts-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="loading-container">
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading accounts...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -181,18 +266,27 @@
             <div class="modal-body">
                 <p>Are you sure you want to delete this account?</p>
                 <p><strong>Employee ID: </strong><span id="delete-account-id"></span></p>
-                <p><strong>Username: </strong><span id="delete-account-username"></span></p>
+                <p><strong>Account Email: </strong><span id="delete-account-email"></span></p>
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle alert-icon"></i>
                     <div>This action cannot be undone. Deleting an account will prevent the employee from accessing the system.</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cancel-delete">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete">Delete Account</button>
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn" data-id="">
+                    <i class="fas fa-trash-alt btn-icon"></i> Delete Account
+                </button>
             </div>
         </div>
     </div>
-
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <!-- Scripts -->
+    <script type="module" src="../../assets/js/pages/accounts/index.js"></script>
 </body>
-</html> 
+</html>

@@ -9,6 +9,62 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="shortcut icon" href="../../assets/img/favicon.ico" type="image/x-icon">
     <script src="../../config.js"></script>
+    <style>
+        /* Badge styles for status indicators */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .badge-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .badge-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .badge-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* Table improvements */
+        .table-actions {
+            white-space: nowrap;
+        }
+        
+        /* Loading states */
+        .loading-container {
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            margin: 0 auto 1rem;
+        }
+        
+        /* Responsive table */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+            
+            .table-actions {
+                min-width: 120px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -100,18 +156,37 @@
                     <div class="card-header">
                         <h2 class="card-title">Filters</h2>
                         <button type="button" class="btn btn-sm btn-outline" id="toggle-filters">
-                            <i class="fas fa-filter btn-icon"></i> Toggle Filters
+                            <i class="fas fa-filter btn-icon"></i> Show Filters
                         </button>
                     </div>
-                    <div class="card-body" id="filters-container" style="display: none;">
+                    <div class="card-body" id="filters-container">
                         <form id="filter-form" class="form">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="search" class="form-label">Search</label>
-                                    <input type="text" id="search" class="form-input" placeholder="Search by Username, Email...">
+                                    <input type="text" id="search" class="form-input" placeholder="Search by Name, Username, Email...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort_field" class="form-label">Sort By</label>
+                                    <select id="sort_field" class="form-select">
+                                        <option value="id">User ID</option>
+                                        <option value="firstname">First Name</option>
+                                        <option value="lastname">Last Name</option>
+                                        <option value="username">Username</option>
+                                        <option value="email">Email</option>
+                                        <option value="role">Role</option>
+                                        <option value="created_at">Date Created</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort_direction" class="form-label">Sort Direction</label>
+                                    <select id="sort_direction" class="form-select">
+                                        <option value="asc">Ascending</option>
+                                        <option value="desc">Descending</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="filter-actions">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search btn-icon"></i> Apply Filters
                                 </button>
@@ -127,19 +202,21 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table" id="users-table">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>First Name</th>
-                                        <th>Last Name</th>
-                                        <th>Email</th>
-                                        <th>Username</th>
+                                        <th data-sort="firstname">First Name</th>
+                                        <th data-sort="lastname">Last Name</th>
+                                        <th data-sort="username">Username</th>
+                                        <th data-sort="email">Email</th>
+                                        <th data-sort="role">Role</th>
+                                        <th data-sort="status">Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-table-body">
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="7" class="text-center">
                                             <div class="loading-container">
                                                 <div class="loading-spinner"></div>
                                                 <p>Loading users...</p>
@@ -194,10 +271,20 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cancel-delete">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete">Delete User</button>
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn" data-id="">
+                    <i class="fas fa-trash-alt btn-icon"></i> Delete User
+                </button>
             </div>
         </div>
     </div>
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <!-- Scripts -->
+    <script type="module" src="../../assets/js/pages/users/index.js"></script>
 </body>
-</html> 
+</html>

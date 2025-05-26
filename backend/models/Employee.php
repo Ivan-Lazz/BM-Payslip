@@ -35,36 +35,57 @@ class Employee {
      * @return PDOStatement Query result
      */
     public function readPaginated($search = '') {
-        $offset = ($this->page - 1) * $this->records_per_page;
-        
-        $whereClause = '';
-        if (!empty($search)) {
-            $whereClause = "WHERE employee_id LIKE :search 
-                           OR firstname LIKE :search 
-                           OR lastname LIKE :search
-                           OR email LIKE :search
-                           OR contact_number LIKE :search";
+        try {
+            // Get sort parameters from request
+            $sortField = isset($_GET['sort_field']) ? $_GET['sort_field'] : 'employee_id';
+            $sortDirection = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'ASC';
+            
+            // Validate sort field
+            $allowedFields = ['employee_id', 'firstname', 'lastname', 'email', 'contact_number', 'created_at'];
+            if (!in_array($sortField, $allowedFields)) {
+                $sortField = 'employee_id';
+            }
+            
+            // Validate sort direction
+            if (!in_array($sortDirection, ['ASC', 'DESC'])) {
+                $sortDirection = 'ASC';
+            }
+            
+            $offset = ($this->page - 1) * $this->records_per_page;
+            
+            $whereClause = '';
+            if (!empty($search)) {
+                $whereClause = "WHERE firstname LIKE :search1 
+                               OR lastname LIKE :search2 
+                               OR email LIKE :search3
+                               OR contact_number LIKE :search4
+                               OR employee_id LIKE :search5";
+            }
+            
+            $query = "SELECT * FROM " . $this->table_name . " 
+                     {$whereClause} 
+                     ORDER BY $sortField $sortDirection 
+                     LIMIT :offset, :limit";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            if (!empty($search)) {
+                $searchTerm = "%{$search}%";
+                $stmt->bindParam(':search1', $searchTerm);
+                $stmt->bindParam(':search2', $searchTerm);
+                $stmt->bindParam(':search3', $searchTerm);
+                $stmt->bindParam(':search4', $searchTerm);
+                $stmt->bindParam(':search5', $searchTerm);
+            }
+            
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $this->records_per_page, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new Exception("Error reading employees: " . $e->getMessage());
         }
-        
-        $query = "SELECT employee_id, firstname, lastname, contact_number, email, created_at, updated_at 
-                 FROM " . $this->table_name . " 
-                 {$whereClause} 
-                 ORDER BY employee_id ASC 
-                 LIMIT :offset, :limit";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        if (!empty($search)) {
-            $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
-        }
-        
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        $stmt->bindParam(':limit', $this->records_per_page, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        
-        return $stmt;
     }
     
     /**
@@ -76,11 +97,11 @@ class Employee {
     public function countAll($search = '') {
         $whereClause = '';
         if (!empty($search)) {
-            $whereClause = "WHERE employee_id LIKE :search 
-                           OR firstname LIKE :search 
-                           OR lastname LIKE :search
-                           OR email LIKE :search
-                           OR contact_number LIKE :search";
+            $whereClause = "WHERE firstname LIKE :search1 
+                           OR lastname LIKE :search2 
+                           OR email LIKE :search3
+                           OR contact_number LIKE :search4
+                           OR employee_id LIKE :search5";
         }
         
         $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " {$whereClause}";
@@ -89,7 +110,11 @@ class Employee {
         
         if (!empty($search)) {
             $searchTerm = "%{$search}%";
-            $stmt->bindParam(':search', $searchTerm);
+            $stmt->bindParam(':search1', $searchTerm);
+            $stmt->bindParam(':search2', $searchTerm);
+            $stmt->bindParam(':search3', $searchTerm);
+            $stmt->bindParam(':search4', $searchTerm);
+            $stmt->bindParam(':search5', $searchTerm);
         }
         
         $stmt->execute();

@@ -100,18 +100,36 @@
                     <div class="card-header">
                         <h2 class="card-title">Filters</h2>
                         <button type="button" class="btn btn-sm btn-outline" id="toggle-filters">
-                            <i class="fas fa-filter btn-icon"></i> Toggle Filters
+                            <i class="fas fa-filter btn-icon"></i> Show Filters
                         </button>
                     </div>
-                    <div class="card-body" id="filters-container" style="display: none;">
+                    <div class="card-body" id="filters-container">
                         <form id="filter-form" class="form">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="search" class="form-label">Search</label>
                                     <input type="text" id="search" class="form-input" placeholder="Search by Employee ID, Bank Name...">
                                 </div>
+                                <div class="form-group">
+                                    <label for="sort_field" class="form-label">Sort By</label>
+                                    <select id="sort_field" class="form-select">
+                                        <option value="employee_id">Employee ID</option>
+                                        <option value="firstname">First Name</option>
+                                        <option value="lastname">Last Name</option>
+                                        <option value="preferred_bank">Bank Name</option>
+                                        <option value="bank_account_number">Account Number</option>
+                                        <option value="created_at">Date Added</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort_direction" class="form-label">Sort Direction</label>
+                                    <select id="sort_direction" class="form-select">
+                                        <option value="asc">Ascending</option>
+                                        <option value="desc">Descending</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="form-group">
+                            <div class="filter-actions">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search btn-icon"></i> Apply Filters
                                 </button>
@@ -124,42 +142,53 @@
                 </div>
 
                 <!-- Banking Table -->
-                <div class="table-responsive">
-                    <table class="table" id="banking-table">
-                        <thead>
-                            <tr>
-                                <th>Employee ID</th>
-                                <th>Employee Name</th>
-                                <th>Preferred Bank</th>
-                                <th>Bank Account</th>
-                                <th>Bank Holder</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Table rows will be dynamically populated -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination -->
-                <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                    <div class="pagination-info">
-                        <span id="pagination-info">Showing 0-0 of 0 banking details</span>
-                    </div>
-                    <div class="pagination-controls">
-                        <div class="form-row" style="margin-bottom: 0;">
-                            <div class="form-group" style="margin-bottom: 0; margin-right: 1rem;">
-                                <select id="per-page" class="form-select">
-                                    <option value="10">10 per page</option>
-                                    <option value="25">25 per page</option>
-                                    <option value="50">50 per page</option>
-                                    <option value="100">100 per page</option>
-                                </select>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="employee_id">Employee ID</th>
+                                        <th data-sort="firstname">First Name</th>
+                                        <th data-sort="lastname">Last Name</th>
+                                        <th data-sort="preferred_bank">Preferred Bank</th>
+                                        <th data-sort="bank_account_number">Bank Account</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="banking-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="loading-container">
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading banking details...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <div class="pagination-info">
+                                <span id="pagination-info">Showing 0-0 of 0 banking details</span>
                             </div>
-                            <ul class="pagination" id="pagination">
-                                <!-- Pagination will be generated here -->
-                            </ul>
+                            <div class="pagination-controls">
+                                <div class="form-row" style="margin-bottom: 0;">
+                                    <div class="form-group" style="margin-bottom: 0; margin-right: 1rem;">
+                                        <select id="per-page" class="form-select">
+                                            <option value="10">10 per page</option>
+                                            <option value="25">25 per page</option>
+                                            <option value="50">50 per page</option>
+                                            <option value="100">100 per page</option>
+                                        </select>
+                                    </div>
+                                    <ul class="pagination" id="pagination">
+                                        <!-- Pagination will be generated here -->
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -184,10 +213,20 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cancel-delete">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete">Delete Banking Details</button>
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn" data-id="">
+                    <i class="fas fa-trash-alt btn-icon"></i> Delete Banking Details
+                </button>
             </div>
         </div>
     </div>
+    
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+    
+    <!-- Scripts -->
+    <script type="module" src="../../assets/js/pages/banking/index.js"></script>
 </body>
 </html> 

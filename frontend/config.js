@@ -2,8 +2,8 @@
  * Pay Slip Generator System Configuration
  */
 const config = {
-    // API Endpoint URL - Updated with proper path including /api prefix
-    apiBaseUrl: 'http://localhost/testPayRoll/api',
+    // API Endpoint URL - Updated to point to the backend in bm-payslip folder
+    apiBaseUrl: 'http://localhost/bm-payslip/backend/api',
     
     // Company Information
     companyName: 'BM Outsourcing',
