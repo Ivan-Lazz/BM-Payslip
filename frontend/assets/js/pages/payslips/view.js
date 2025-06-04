@@ -54,6 +54,37 @@ class PayslipViewPage extends BasePage {
             });
         }
         
+        // FIXED: PDF download links
+        if (this.elements.agentPdfLink) {
+            this.elements.agentPdfLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (this.payslipData && this.payslipData.id) {
+                    try {
+                        await apiService.downloadPDF(this.payslipData.id, 'agent');
+                        this.showNotification('Agent PDF download started', 'success');
+                    } catch (error) {
+                        console.error('Error downloading agent PDF:', error);
+                        this.showNotification('Error downloading agent PDF', 'error');
+                    }
+                }
+            });
+        }
+
+        if (this.elements.adminPdfLink) {
+            this.elements.adminPdfLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (this.payslipData && this.payslipData.id) {
+                    try {
+                        await apiService.downloadPDF(this.payslipData.id, 'admin');
+                        this.showNotification('Admin PDF download started', 'success');
+                    } catch (error) {
+                        console.error('Error downloading admin PDF:', error);
+                        this.showNotification('Error downloading admin PDF', 'error');
+                    }
+                }
+            });
+        }
+        
         // Handle keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             // Ctrl+P or Cmd+P for print
@@ -210,19 +241,23 @@ class PayslipViewPage extends BasePage {
                 this.setElementText('generatedDate', generatedDate);
             }
             
-            // PDF links
-            if (this.elements.agentPdfLink && payslip.agent_pdf_path) {
-                this.elements.agentPdfLink.href = payslip.agent_pdf_path;
-                this.elements.agentPdfLink.style.display = 'inline-flex';
-            } else if (this.elements.agentPdfLink) {
-                this.elements.agentPdfLink.style.display = 'none';
+            // FIXED: PDF links - Update to use new download methods
+            if (this.elements.agentPdfLink) {
+                if (payslip.agent_pdf_path) {
+                    this.elements.agentPdfLink.style.display = 'inline-flex';
+                    this.elements.agentPdfLink.innerHTML = '<i class="fas fa-file-pdf btn-icon"></i> Download Agent Payslip';
+                } else {
+                    this.elements.agentPdfLink.style.display = 'none';
+                }
             }
             
-            if (this.elements.adminPdfLink && payslip.admin_pdf_path) {
-                this.elements.adminPdfLink.href = payslip.admin_pdf_path;
-                this.elements.adminPdfLink.style.display = 'inline-flex';
-            } else if (this.elements.adminPdfLink) {
-                this.elements.adminPdfLink.style.display = 'none';
+            if (this.elements.adminPdfLink) {
+                if (payslip.admin_pdf_path) {
+                    this.elements.adminPdfLink.style.display = 'inline-flex';
+                    this.elements.adminPdfLink.innerHTML = '<i class="fas fa-file-pdf btn-icon"></i> Download Admin Payslip';
+                } else {
+                    this.elements.adminPdfLink.style.display = 'none';
+                }
             }
             
             // Edit link

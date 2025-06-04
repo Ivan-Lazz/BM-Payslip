@@ -85,11 +85,29 @@ function routeRequest($resource, $id, $subResource, $subResourceId, $method) {
             $controller = new AuthController($db);
             break;
             
-        case 'pdfs':
-            // NEW: Handle PDF downloads
-            require_once __DIR__ . '/controllers/PDFController.php';
-            $controller = new PDFController($db);
-            break;
+        case 'pdf':
+            // FIXED: Handle PDF downloads with correct controller name
+            require_once __DIR__ . '/controllers/PDFDownloadController.php';
+            $controller = new PDFDownloadController($db);
+            
+            // Handle different PDF endpoints:
+            // /pdf/{payslip_id}/agent - Download agent PDF
+            // /pdf/{payslip_id}/admin - Download admin PDF  
+            // /pdf/{payslip_id}/view/agent - View agent PDF in browser
+            // /pdf/{payslip_id}/view/admin - View admin PDF in browser
+            
+            if ($id && $subResource) {
+                if ($subResource === 'view' && $subResourceId) {
+                    // Handle view endpoints: /pdf/{id}/view/{type}
+                    $controller->handleViewRequest($id, $subResourceId);
+                } else {
+                    // Handle download endpoints: /pdf/{id}/{type}
+                    $controller->handleRequest($method, $id, $subResource);
+                }
+            } else {
+                ResponseHandler::badRequest('Invalid PDF endpoint. Expected /pdf/{payslip_id}/{type} or /pdf/{payslip_id}/view/{type}');
+            }
+            return;
             
         case 'install':
             // Special case for installation
@@ -112,10 +130,6 @@ function routeRequest($resource, $id, $subResource, $subResourceId, $method) {
         $controller->handleRequest($method, $id, $subResource);
     } elseif ($resource === 'payslips' && $id && $subResource) {
         // Handle /payslips/{id}/{subresource}
-        $controller->handleRequest($method, $id, $subResource);
-    } elseif ($resource === 'pdfs') {
-        // Handle PDF downloads: /pdfs/{filename}/{type}
-        // Example: /pdfs/agent_000000001_20250525_021127.pdf/agent
         $controller->handleRequest($method, $id, $subResource);
     } else {
         // Call the controller's handleRequest method with standard parameters

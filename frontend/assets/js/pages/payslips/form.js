@@ -37,6 +37,7 @@ class PayslipFormPage extends BasePage {
         this.payslipId = null;
         this.employees = [];
         this.bankingDetails = [];
+        this.currentPayslipData = null; // Store current payslip data for PDF links
         
         this.init();
     }
@@ -135,6 +136,35 @@ class PayslipFormPage extends BasePage {
         if (this.elements.viewPayslipsBtn) {
             this.elements.viewPayslipsBtn.addEventListener('click', () => {
                 window.location.href = 'index.html';
+            });
+        }
+
+        // FIXED: PDF download links in success modal
+        if (this.elements.agentPdfLink) {
+            this.elements.agentPdfLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (this.currentPayslipData && this.currentPayslipData.id) {
+                    try {
+                        await apiService.downloadPDF(this.currentPayslipData.id, 'agent');
+                        this.showNotification('Agent PDF download started', 'success');
+                    } catch (error) {
+                        this.showNotification('Error downloading agent PDF', 'error');
+                    }
+                }
+            });
+        }
+
+        if (this.elements.adminPdfLink) {
+            this.elements.adminPdfLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (this.currentPayslipData && this.currentPayslipData.id) {
+                    try {
+                        await apiService.downloadPDF(this.currentPayslipData.id, 'admin');
+                        this.showNotification('Admin PDF download started', 'success');
+                    } catch (error) {
+                        this.showNotification('Error downloading admin PDF', 'error');
+                    }
+                }
             });
         }
     }
@@ -401,6 +431,7 @@ class PayslipFormPage extends BasePage {
             
             if (response.success) {
                 const payslip = response.data;
+                this.currentPayslipData = payslip; // Store for PDF links
                 
                 // Set form fields
                 if (this.elements.payslipIdInput) {
@@ -490,12 +521,17 @@ class PayslipFormPage extends BasePage {
             }
             
             if (response.success) {
-                // Set PDF links
-                if (this.elements.agentPdfLink && response.data.agent_pdf_path) {
-                    this.elements.agentPdfLink.href = response.data.agent_pdf_path;
+                // Store payslip data for PDF downloads
+                this.currentPayslipData = response.data;
+                
+                // Update PDF link text to show they're ready
+                if (this.elements.agentPdfLink) {
+                    this.elements.agentPdfLink.innerHTML = '<i class="fas fa-file-pdf btn-icon"></i> Download Agent Payslip';
+                    this.elements.agentPdfLink.style.display = 'inline-flex';
                 }
-                if (this.elements.adminPdfLink && response.data.admin_pdf_path) {
-                    this.elements.adminPdfLink.href = response.data.admin_pdf_path;
+                if (this.elements.adminPdfLink) {
+                    this.elements.adminPdfLink.innerHTML = '<i class="fas fa-file-pdf btn-icon"></i> Download Admin Payslip';
+                    this.elements.adminPdfLink.style.display = 'inline-flex';
                 }
                 
                 // Show success modal
@@ -592,6 +628,7 @@ class PayslipFormPage extends BasePage {
         
         this.isEditMode = false;
         this.payslipId = null;
+        this.currentPayslipData = null;
         
         document.querySelector('.page-title').textContent = 'Generate Payslip';
         this.elements.submitBtn.innerHTML = '<i class="fas fa-save btn-icon"></i> Generate Payslip';
@@ -627,33 +664,6 @@ class PayslipFormPage extends BasePage {
             this.elements.form.style.opacity = '1';
             this.elements.form.style.pointerEvents = 'auto';
         }
-    }
-    // Additional method to check for duplicates in debugging
-    debugBankingData(data) {
-        console.group('Banking Data Debug');
-        console.log('Raw data length:', data.length);
-        
-        // Check for duplicate IDs
-        const ids = data.map(item => item.id);
-        const uniqueIds = [...new Set(ids)];
-        console.log('Unique IDs count:', uniqueIds.length);
-        
-        if (ids.length !== uniqueIds.length) {
-            console.warn('Duplicate IDs found!');
-            const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
-            console.log('Duplicate IDs:', [...new Set(duplicateIds)]);
-        }
-        
-        // Check for duplicate account numbers
-        const accountNumbers = data.map(item => item.bank_account_number);
-        const uniqueAccountNumbers = [...new Set(accountNumbers)];
-        console.log('Unique account numbers:', uniqueAccountNumbers.length);
-        
-        if (accountNumbers.length !== uniqueAccountNumbers.length) {
-            console.warn('Duplicate account numbers found!');
-        }
-        
-        console.groupEnd();
     }
 }
 

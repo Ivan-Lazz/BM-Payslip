@@ -312,7 +312,7 @@ class ApiService {
         return response;
     }
 
-    // PDF Download endpoints - NEW METHODS
+    // FIXED PDF Download endpoints - Updated to use correct API routes
     /**
      * Get PDF download URL for a payslip
      * @param {string} payslipId - The payslip ID
@@ -362,6 +362,7 @@ class ApiService {
             const link = document.createElement('a');
             link.href = url;
             link.download = `${type}_payslip_${payslipId}.pdf`;
+            link.target = '_blank';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -388,6 +389,19 @@ class ApiService {
             console.error('PDF view error:', error);
             throw error;
         }
+    }
+
+    /**
+     * Regenerate PDF files for a payslip
+     * @param {string} payslipId - The payslip ID
+     */
+    async regeneratePDFs(payslipId) {
+        console.log('API: Regenerating PDFs for payslip ID:', payslipId);
+        const response = await this.request(`pdf/${payslipId}/regenerate`, {
+            method: 'POST'
+        });
+        console.log('API: Regenerate PDFs response:', response);
+        return response;
     }
 }
 

@@ -325,29 +325,23 @@ class PayslipsPage extends BasePage {
                             <i class="fas fa-download"></i>
                         </button>
                         <div class="dropdown-menu">
-                            ${payslip.agent_pdf_path ? `
-                                <a href="${payslip.agent_pdf_path}" class="dropdown-item" target="_blank">
-                                    <i class="fas fa-file-pdf"></i> Agent Payslip
-                                </a>
-                            ` : ''}
-                            ${payslip.admin_pdf_path ? `
-                                <a href="${payslip.admin_pdf_path}" class="dropdown-item" target="_blank">
-                                    <i class="fas fa-file-pdf"></i> Admin Payslip
-                                </a>
-                            ` : ''}
-                            ${!payslip.agent_pdf_path && !payslip.admin_pdf_path ? `
-                                <span class="dropdown-item text-muted">
-                                    <i class="fas fa-exclamation-triangle"></i> No PDFs available
-                                </span>
-                                <button type="button" class="dropdown-item regenerate-pdf-btn" data-id="${payslip.id}">
-                                    <i class="fas fa-sync-alt"></i> Regenerate PDFs
-                                </button>
-                            ` : `
-                                <div class="dropdown-divider"></div>
-                                <button type="button" class="dropdown-item regenerate-pdf-btn" data-id="${payslip.id}">
-                                    <i class="fas fa-sync-alt"></i> Regenerate PDFs
-                                </button>
-                            `}
+                            <button type="button" class="dropdown-item download-pdf-btn" data-id="${payslip.id}" data-type="agent">
+                                <i class="fas fa-file-pdf"></i> Download Agent Payslip
+                            </button>
+                            <button type="button" class="dropdown-item download-pdf-btn" data-id="${payslip.id}" data-type="admin">
+                                <i class="fas fa-file-pdf"></i> Download Admin Payslip
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item view-pdf-btn" data-id="${payslip.id}" data-type="agent">
+                                <i class="fas fa-eye"></i> View Agent PDF
+                            </button>
+                            <button type="button" class="dropdown-item view-pdf-btn" data-id="${payslip.id}" data-type="admin">
+                                <i class="fas fa-eye"></i> View Admin PDF
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item regenerate-pdf-btn" data-id="${payslip.id}">
+                                <i class="fas fa-sync-alt"></i> Regenerate PDFs
+                            </button>
                         </div>
                     </div>
                 </td>
@@ -365,11 +359,73 @@ class PayslipsPage extends BasePage {
             });
         });
 
-        // Setup regenerate PDF buttons
-        document.querySelectorAll('.regenerate-pdf-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+        // Setup PDF download buttons - FIXED VERSION
+        document.querySelectorAll('.download-pdf-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const payslipId = btn.getAttribute('data-id');
-                await this.regeneratePDFs(payslipId);
+                const type = btn.getAttribute('data-type');
+                
+                // Disable button during download
+                btn.disabled = true;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                
+                try {
+                    await this.downloadPDF(payslipId, type);
+                    this.showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} PDF download started`, 'success');
+                } catch (error) {
+                    this.showNotification(`Error downloading ${type} PDF`, 'error');
+                } finally {
+                    // Re-enable button
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        });
+
+        // Setup PDF view buttons - FIXED VERSION
+        document.querySelectorAll('.view-pdf-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const payslipId = btn.getAttribute('data-id');
+                const type = btn.getAttribute('data-type');
+                
+                try {
+                    await this.viewPDF(payslipId, type);
+                } catch (error) {
+                    this.showNotification(`Error viewing ${type} PDF`, 'error');
+                }
+            });
+        });
+
+        // Setup regenerate PDF buttons - FIXED VERSION
+        document.querySelectorAll('.regenerate-pdf-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const payslipId = btn.getAttribute('data-id');
+                
+                // Disable button during regeneration
+                btn.disabled = true;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Regenerating...';
+                
+                try {
+                    await this.regeneratePDFs(payslipId);
+                    this.showNotification('PDFs regenerated successfully', 'success');
+                } catch (error) {
+                    this.showNotification('Error regenerating PDFs', 'error');
+                } finally {
+                    // Re-enable button
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
             });
         });
 
@@ -392,6 +448,46 @@ class PayslipsPage extends BasePage {
                 menu.classList.toggle('show');
             });
         });
+    }
+    
+    // FIXED PDF handling methods using the updated API service
+    async downloadPDF(payslipId, type) {
+        try {
+            console.log(`Downloading ${type} PDF for payslip ${payslipId}`);
+            
+            // Use the updated API service method
+            await apiService.downloadPDF(payslipId, type);
+            
+        } catch (error) {
+            console.error('PDF download error:', error);
+            throw error;
+        }
+    }
+    
+    async viewPDF(payslipId, type) {
+        try {
+            console.log(`Viewing ${type} PDF for payslip ${payslipId}`);
+            
+            // Use the updated API service method
+            await apiService.viewPDF(payslipId, type);
+            
+        } catch (error) {
+            console.error('PDF view error:', error);
+            throw error;
+        }
+    }
+    
+    async regeneratePDFs(payslipId) {
+        try {
+            console.log(`Regenerating PDFs for payslip ${payslipId}`);
+            
+            // Use the API service regenerate method
+            await apiService.regeneratePDFs(payslipId);
+            
+        } catch (error) {
+            console.error('PDF regeneration error:', error);
+            throw error;
+        }
     }
     
     updatePagination(total) {
@@ -511,17 +607,11 @@ class PayslipsPage extends BasePage {
             this.elements.deleteConfirmBtn.disabled = true;
             this.elements.deleteConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
             
-            const response = await payslipApiService.deletePayslip(this.selectedPayslipId);
+            const response = await apiService.deletePayslip(this.selectedPayslipId);
             
             if (response.success) {
                 this.showNotification('Payslip deleted successfully', 'success');
                 this.hideDeleteModal();
-                
-                // If this was the last item on the page and not page 1, go to previous page
-                if (this.payslips.length === 1 && this.currentPage > 1) {
-                    this.currentPage--;
-                }
-                
                 await this.loadPayslips();
             } else {
                 throw new Error(response.message || 'Error deleting payslip');
@@ -536,28 +626,11 @@ class PayslipsPage extends BasePage {
         }
     }
     
-    async regeneratePDFs(payslipId) {
-        try {
-            const response = await payslipApiService.generatePDFs(payslipId);
-            
-            if (response.success) {
-                this.showNotification('PDFs regenerated successfully', 'success');
-                // Reload payslips to get updated PDF paths
-                await this.loadPayslips();
-            } else {
-                throw new Error(response.message || 'Error regenerating PDFs');
-            }
-        } catch (error) {
-            console.error('Error regenerating PDFs:', error);
-            this.showNotification(error.message || 'Error regenerating PDFs', 'error');
-        }
-    }
-    
     showLoading() {
         if (this.elements.payslipTableBody) {
             this.elements.payslipTableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center" style="padding: 3rem;">
+                    <td colspan="6" class="text-center">
                         <div class="loading-container">
                             <div class="loading-spinner"></div>
                             <p>Loading payslips...</p>
